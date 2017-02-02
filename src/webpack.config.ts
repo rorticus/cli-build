@@ -34,13 +34,13 @@ module.exports = function (args: any) {
 			}
 		],
 		entry: {
-			[args.out]: [ `${__dirname}/templates/custom-component.js`, args.css ]
+			[args.out]: [ `${__dirname}/templates/custom-component.js` ]
 		},
 		plugins: [
 			new webpack.ContextReplacementPlugin(/dojo-app[\\\/]lib/, { test: () => false }),
 			new ExtractTextPlugin(`${args.out}.css`),
 			new CopyWebpackPlugin([
-				{ context: 'src', from: '**/*', ignore: '*.ts' }
+				{ context: 'src', from: '**/*', ignore: [ '*.ts', '*.css', '*.html' ] }
 			]),
 			new webpack.optimize.DedupePlugin(),
 			new InjectModulesPlugin({
@@ -50,6 +50,7 @@ module.exports = function (args: any) {
 			new CoreLoadPlugin(),
 			new webpack.optimize.UglifyJsPlugin({ compress: { warnings: false }, exclude: /tests[/]/ }),
 			new HtmlWebpackPlugin ({
+				inject: false,
 				template: path.join(__dirname, 'templates/custom-component.html'),
 				filename: `${args.out}.html`
 			}),
@@ -105,12 +106,8 @@ module.exports = function (args: any) {
 				{ test: /globalize(\/|$)/, loader: 'imports-loader?define=>false' },
 				{ test: /src[\\\/].*\.css?$/, loader: cssModuleLoader },
 				{ test: /\.css$/, exclude: /src[\\\/].*/, loader: cssLoader },
+				{ test: /\.css$/, loader: ExtractTextPlugin.extract(cssLoader) },
 				{ test: /styles\/.*\.js$/, exclude: /src[\\\/].*/, loader: 'json-css-module-loader' },
-				...includeWhen(args.withTests, (args: any) => {
-					return [
-						{ test: /tests[\\\/].*\.ts?$/, loader: 'umd-compat-loader!ts-loader' }
-					];
-				}),
 				{
 					test: /src\/templates\/custom-component\.js/,
 					loader: `imports-loader?widgetFactory=${args.factory}`
