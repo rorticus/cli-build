@@ -34,7 +34,8 @@ module.exports = function (args: any) {
 			}
 		],
 		entry: {
-			[args.out]: [ `${__dirname}/templates/custom-component.js` ]
+			[args.out]: [ `${__dirname}/templates/custom-component.js` ],
+			'widget-core': '@dojo/widget-core'
 		},
 		plugins: [
 			new webpack.ContextReplacementPlugin(/dojo-app[\\\/]lib/, { test: () => false }),
@@ -48,6 +49,7 @@ module.exports = function (args: any) {
 				moduleIds: [ './request/xhr' ]
 			}),
 			new CoreLoadPlugin(),
+			new webpack.optimize.CommonsChunkPlugin('widget-core', 'widget-core.js'),
 			// new webpack.optimize.UglifyJsPlugin({ compress: { warnings: false }, exclude: /tests[/]/ }),
 			new HtmlWebpackPlugin ({
 				inject: false,
