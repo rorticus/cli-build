@@ -109,6 +109,16 @@ const command: Command = {
 			type: 'array'
 		});
 
+		helper.yargs.option('element', {
+			describe: 'Path to a custom element descriptor factory',
+			type: 'string'
+		});
+
+		helper.yargs.option('elementPrefix', {
+			describe: 'Output file for custom element',
+			type: 'string'
+		});
+
 		return helper.yargs;
 	},
 	run(helper: Helper, args: BuildArgs) {
