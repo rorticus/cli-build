@@ -34,11 +34,11 @@ module.exports = function (args: any) {
 			}
 		],
 		entry: {
-			[args.out]: `${__dirname}/templates/custom-component.js`
+			[args.out]: [ `${__dirname}/templates/custom-component.js`, args.css ]
 		},
 		plugins: [
 			new webpack.ContextReplacementPlugin(/dojo-app[\\\/]lib/, { test: () => false }),
-			new ExtractTextPlugin('main.css'),
+			new ExtractTextPlugin(`${args.out}.css`),
 			new CopyWebpackPlugin([
 				{ context: 'src', from: '**/*', ignore: '*.ts' }
 			]),
@@ -50,7 +50,6 @@ module.exports = function (args: any) {
 			new CoreLoadPlugin(),
 			new webpack.optimize.UglifyJsPlugin({ compress: { warnings: false }, exclude: /tests[/]/ }),
 			new HtmlWebpackPlugin ({
-				inject: true,
 				template: path.join(__dirname, 'templates/custom-component.html'),
 				filename: `${args.out}.html`
 			}),

@@ -114,6 +114,11 @@ const command: Command = {
 			type: 'string'
 		});
 
+		helper.yargs.option('css', {
+			describe: 'A path to the CSS module for the widget',
+			type: 'string'
+		});
+
 		return helper.yargs;
 	},
 	run(helper: Helper, args: BuildArgs) {
