@@ -48,7 +48,7 @@ module.exports = function (args: any) {
 				moduleIds: [ './request/xhr' ]
 			}),
 			new CoreLoadPlugin(),
-			new webpack.optimize.UglifyJsPlugin({ compress: { warnings: false }, exclude: /tests[/]/ }),
+			// new webpack.optimize.UglifyJsPlugin({ compress: { warnings: false }, exclude: /tests[/]/ }),
 			new HtmlWebpackPlugin ({
 				inject: false,
 				template: path.join(__dirname, 'templates/custom-component.html'),
@@ -106,10 +106,9 @@ module.exports = function (args: any) {
 				{ test: /globalize(\/|$)/, loader: 'imports-loader?define=>false' },
 				{ test: /src[\\\/].*\.css?$/, loader: cssModuleLoader },
 				{ test: /\.css$/, exclude: /src[\\\/].*/, loader: cssLoader },
-				{ test: /\.css$/, loader: ExtractTextPlugin.extract(cssLoader) },
 				{ test: /styles\/.*\.js$/, exclude: /src[\\\/].*/, loader: 'json-css-module-loader' },
 				{
-					test: /src\/templates\/custom-component\.js/,
+					test: /custom-component\.js/,
 					loader: `imports-loader?widgetFactory=${args.factory}`
 				}
 			]
