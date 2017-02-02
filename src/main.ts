@@ -89,11 +89,6 @@ const command: Command = {
 			type: 'number'
 		});
 
-		helper.yargs.option('t', {
-			alias: 'with-tests',
-			describe: 'build tests as well as sources'
-		});
-
 		helper.yargs.option('locale', {
 			describe: 'The default locale for the application',
 			type: 'string'
@@ -107,6 +102,16 @@ const command: Command = {
 		helper.yargs.option('messageBundles', {
 			describe: 'Any message bundles to include in the build',
 			type: 'array'
+		});
+
+		helper.yargs.option('out', {
+			describe: 'The name of the output bundle',
+			type: 'string'
+		});
+
+		helper.yargs.option('factory', {
+			describe: 'A path to the CustomElementDescriptorFactory',
+			type: 'string'
 		});
 
 		return helper.yargs;

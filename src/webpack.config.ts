@@ -34,20 +34,7 @@ module.exports = function (args: any) {
 			}
 		],
 		entry: {
-			'src/main': [
-				path.join(basePath, 'src/main.css'),
-				path.join(basePath, 'src/main.ts')
-			],
-			...includeWhen(args.withTests, (args: any) => {
-				return {
-					'../_build/tests/unit/all': [ path.join(basePath, 'tests/unit/all.ts') ],
-					'../_build/tests/functional/all': [ path.join(basePath, 'tests/functional/all.ts') ],
-					'../_build/src/main': [
-						path.join(basePath, 'src/main.css'),
-						path.join(basePath, 'src/main.ts')
-					]
-				};
-			})
+			[args.out]: `${__dirname}/templates/custom-component.js`
 		},
 		plugins: [
 			new webpack.ContextReplacementPlugin(/dojo-app[\\\/]lib/, { test: () => false }),
@@ -64,8 +51,8 @@ module.exports = function (args: any) {
 			new webpack.optimize.UglifyJsPlugin({ compress: { warnings: false }, exclude: /tests[/]/ }),
 			new HtmlWebpackPlugin ({
 				inject: true,
-				chunks: [ 'src/main' ],
-				template: 'src/index.html'
+				template: path.join(__dirname, 'templates/custom-component.html'),
+				filename: `${args.out}.html`
 			}),
 			...includeWhen(args.locale, (args: any) => {
 				return [
@@ -76,25 +63,12 @@ module.exports = function (args: any) {
 					})
 				];
 			}),
-			...includeWhen(!args.watch && !args.withTests, (args: any) => {
+			...includeWhen(!args.watch, (args: any) => {
 				return [
 					new BundleAnalyzerPlugin({
 						analyzerMode: 'static',
 						openAnalyzer: false,
 						reportType: 'sunburst'
-					})
-				];
-			}),
-			...includeWhen(args.withTests, (args: any) => {
-				return [
-					new CopyWebpackPlugin([
-						{context: 'tests', from: '**/*', ignore: '*.ts', to: '../_build/tests' }
-					]),
-					new HtmlWebpackPlugin ({
-						inject: true,
-						chunks: [ '../_build/src/main' ],
-						template: 'src/index.html',
-						filename: '../_build/src/index.html'
 					})
 				];
 			})
@@ -116,7 +90,7 @@ module.exports = function (args: any) {
 		},
 		devtool: 'source-map',
 		resolve: {
-			root: [ basePath ],
+			root: [ basePath, path.join(basePath, 'node_modules') ],
 			extensions: ['', '.ts', '.js']
 		},
 		resolveLoader: {
@@ -130,7 +104,6 @@ module.exports = function (args: any) {
 				{ test: /src[\\\/].*\.ts?$/, loader: 'umd-compat-loader!ts-loader' },
 				{ test: /\.js?$/, loader: 'umd-compat-loader' },
 				{ test: /globalize(\/|$)/, loader: 'imports-loader?define=>false' },
-				{ test: /\.html$/, loader: 'html' },
 				{ test: /src[\\\/].*\.css?$/, loader: cssModuleLoader },
 				{ test: /\.css$/, exclude: /src[\\\/].*/, loader: cssLoader },
 				{ test: /styles\/.*\.js$/, exclude: /src[\\\/].*/, loader: 'json-css-module-loader' },
@@ -138,7 +111,11 @@ module.exports = function (args: any) {
 					return [
 						{ test: /tests[\\\/].*\.ts?$/, loader: 'umd-compat-loader!ts-loader' }
 					];
-				})
+				}),
+				{
+					test: /src\/templates\/custom-component\.js/,
+					loader: `imports-loader?widgetFactory=${args.factory}`
+				}
 			]
 		}
 	};
