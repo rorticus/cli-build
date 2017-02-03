@@ -39,7 +39,7 @@ module.exports = function (args: any) {
 				callback();
 			}
 		],
-		entry: includeWhen(args.c, (args: any) => {
+		entry: includeWhen(args.element, (args: any) => {
 			return {
 				[args.elementPrefix]: [ `${__dirname}/templates/custom-element.js` ],
 				'widget-core': '@dojo/widget-core'
@@ -156,7 +156,11 @@ module.exports = function (args: any) {
 		],
 		output: {
 			libraryTarget: 'umd',
-			path: path.resolve('./dist'),
+			path: includeWhen(args.element, (args: any) => {
+				return path.resolve(`./dist/${args.elementPrefix}`);
+			}, () => {
+				return path.resolve('./dist');
+			}),
 			filename: '[name].js'
 		},
 		devtool: 'source-map',
