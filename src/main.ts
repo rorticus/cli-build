@@ -149,6 +149,15 @@ const command: Command = {
 		else {
 			return compile(config(configArgs), options);
 		}
+	},
+	eject() {
+		return {
+			npm: {
+				devDependencies: {
+					'json-css-module-loader': '^1.0.0'
+				}
+			}
+		};
 	}
 };
 export default command;
