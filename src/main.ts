@@ -150,14 +150,14 @@ const command: Command = {
 			return compile(config(configArgs), options);
 		}
 	},
-	eject() {
-		return {
-			npm: {
-				devDependencies: {
-					'json-css-module-loader': '^1.0.0'
-				}
+	eject(helper: Helper, npm, files) {
+		npm({
+			devDependencies: {
+				'json-css-module-loader': '^1.0.0'
 			}
-		};
+		});
+
+		// files([]);
 	}
 };
 export default command;
