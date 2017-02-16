@@ -1,4 +1,4 @@
-import { Command, Helper, OptionsHelper } from '@dojo/cli/interfaces';
+import { Command, Helper, OptionsHelper, EjectOutput } from '@dojo/cli/interfaces';
 import { Argv } from 'yargs';
 const webpack: any = require('webpack');
 const WebpackDevServer: any = require('webpack-dev-server');
@@ -46,7 +46,7 @@ function getConfigArgs(args: BuildArgs): Partial<BuildArgs> {
 		if (matches && matches[ 1 ]) {
 			options.elementPrefix = matches[ 1 ].replace(/[A-Z][a-z]/g, '-\$&').replace(/^-+/g, '').toLowerCase();
 		} else {
-			console.error(`"${args.element}" does not follow the pattern "createXYZElement". Use --elementPrefix to name element.`);
+			console.error(`'${args.element}' does not follow the pattern 'createXYZElement'. Use --elementPrefix to name element.`);
 			process.exit();
 		}
 	}
@@ -150,14 +150,38 @@ const command: Command = {
 			return compile(config(configArgs), options);
 		}
 	},
-	eject(helper: Helper, npm, files) {
-		npm({
-			devDependencies: {
-				'json-css-module-loader': '^1.0.0'
-			}
-		});
+	eject(helper: Helper) {
+		const ejectOutput: EjectOutput = {
+			npm: {
+				devDependencies: {
+					'copy-webpack-plugin': '^4.0.1',
+					'css-loader': '^0.25.0',
+					'dts-generator': '~1.7.0',
+					'extract-text-webpack-plugin': '^1.0.1',
+					'file-loader': '^0.9.0',
+					'html-loader': '^0.4.4',
+					'html-webpack-plugin': '^2.22.0',
+					'imports-loader': '^0.6.5',
+					'json-css-module-loader': '^1.0.0',
+					'postcss-cssnext': '^2.9.0',
+					'postcss-import': '^9.0.0',
+					'postcss-loader': '^1.2.1',
+					'source-map-loader': 'zerkalica/source-map-loader#6c8872f',
+					'style-loader': '^0.13.1',
+					'ts-loader': '^1.0.0',
+					'typescript': '~2.1.4',
+					'umd-compat-loader': '^1.0.1',
+					'webpack-bundle-analyzer-sunburst': '^1.2.0',
+					'webpack-dev-server': '^1.16.1',
+					'webpack': '^1.13.2'
+				}
+			},
+			copy: {
 
-		// files([]);
+			}
+		};
+
+		return ejectOutput;
 	}
 };
 export default command;
