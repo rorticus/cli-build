@@ -177,7 +177,10 @@ const command: Command = {
 				}
 			},
 			copy: {
-
+				path: __dirname,
+				files: [
+					'./webpack.config.js'
+				]
 			}
 		};
 
