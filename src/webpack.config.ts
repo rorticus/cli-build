@@ -11,16 +11,11 @@ import { existsSync } from 'fs';
 import * as NormalModuleReplacementPlugin from 'webpack/lib/NormalModuleReplacementPlugin';
 
 const isCLI = process.env.DOJO_CLI;
-const prefix = isCLI ? './plugins/' : '@dojo/cli-build-webpack/';
-import CoreLoadPlugin from './plugins/CoreLoadPlugin';
-import I18nPlugin from './plugins/I18nPlugin';
-import InjectModulesPlugin from './plugins/InjectModulesPlugin';
+const CoreLoadPlugin = isCLI ? require('./plugins/CoreLoadPlugin') : require('@dojo/cli-build-webpack/plugins/CoreLoadPlugin');
+const I18nPlugin = isCLI ? require('./plugins/I18nPlugin') : require('@dojo/cli-build-webpack/plugins/I18nPlugin');
+const InjectModulesPlugin = isCLI ? require('./plugins/InjectModulesPlugin') : require('@dojo/cli-build-webpack/plugins/InjectModulesPlugin');
 
-console.dir(process.env);
-
-module.exports = function (args: any) {
-	args = args || {};
-
+const webpackConfigGenerator = function (args: any = {}) {
 	const cssLoader = ExtractTextPlugin.extract({ use: 'css-loader?sourceMap' });
 	const localIdentName = args.watch ? '[name]__[local]__[hash:base64:5]' : '[hash:base64:8]';
 	const cssModuleLoader = ExtractTextPlugin.extract({
@@ -231,3 +226,5 @@ module.exports = function (args: any) {
 		}
 	};
 };
+
+module.exports = isCLI ? webpackConfigGenerator : webpackConfigGenerator();
