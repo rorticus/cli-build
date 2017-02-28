@@ -1,4 +1,4 @@
-import { Command, Helper, OptionsHelper } from '@dojo/cli/interfaces';
+import { Command, EjectOutput, Helper, OptionsHelper } from '@dojo/cli/interfaces';
 import { Argv } from 'yargs';
 import config from './webpack.config';
 import * as fs from 'fs';
@@ -176,6 +176,45 @@ const command: Command = {
 		else {
 			return compile(config(configArgs), options);
 		}
+	},
+	eject(helper: Helper) {
+		const ejectOutput: EjectOutput = {
+			npm: {
+				devDependencies: {
+					'@dojo/cli-build-webpack': '>=2.0.0-alpha.14',
+					'copy-webpack-plugin': '^4.0.1',
+					'css-loader': '^0.26.1',
+					'dts-generator': '~1.7.0',
+					'extract-text-webpack-plugin': '^2.0.0-rc.3',
+					'file-loader': '^0.10.0',
+					'html-loader': '^0.4.4',
+					'html-webpack-plugin': '^2.28.0',
+					'imports-loader': '^0.7.0',
+					'json-css-module-loader': '^1.0.0',
+					'loader-utils': '^1.0.2',
+					'postcss-cssnext': '^2.9.0',
+					'postcss-import': '^9.0.0',
+					'postcss-loader': '^1.3.0',
+					'source-map-loader': 'bryanforbes/source-map-loader#463701b',
+					'style-loader': '^0.13.1',
+					'ts-loader': '^2.0.0',
+					'typed-css-modules': '^0.2.0',
+					'typescript': 'rc',
+					'umd-compat-loader': '^1.0.1',
+					'webpack': '^2.2.1',
+					'webpack-bundle-analyzer-sunburst': '^1.2.0',
+					'webpack-dev-server': '^2.3.0'
+				}
+			},
+			copy: {
+				path: __dirname,
+				files: [
+					'./webpack.config.js'
+				]
+			}
+		};
+
+		return ejectOutput;
 	}
 };
 export default command;

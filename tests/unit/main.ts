@@ -250,4 +250,16 @@ describe('main', () => {
 			});
 		});
 	});
+
+	describe('eject', () => {
+		it('should contain eject information', () => {
+			const result = moduleUnderTest.eject({});
+
+			assert.isTrue('npm' in result, 'expecting npm property');
+			assert.isTrue('devDependencies' in result.npm, 'expecting a devDependencies property');
+			assert.isTrue(result.npm.devDependencies.length > 0, 'expecting a list of dev dependencies');
+			assert.isTrue('copy' in result, 'expecting a copy property');
+			assert.deepEqual(result.copy.files, [ 'webpack.config.js' ]);
+		});
+	});
 });
