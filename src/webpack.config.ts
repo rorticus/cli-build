@@ -11,9 +11,9 @@ import { existsSync } from 'fs';
 import * as NormalModuleReplacementPlugin from 'webpack/lib/NormalModuleReplacementPlugin';
 
 const isCLI = process.env.DOJO_CLI;
-const CoreLoadPlugin = isCLI ? require('./plugins/CoreLoadPlugin') : require('@dojo/cli-build-webpack/plugins/CoreLoadPlugin');
-const I18nPlugin = isCLI ? require('./plugins/I18nPlugin') : require('@dojo/cli-build-webpack/plugins/I18nPlugin');
-const InjectModulesPlugin = isCLI ? require('./plugins/InjectModulesPlugin') : require('@dojo/cli-build-webpack/plugins/InjectModulesPlugin');
+const CoreLoadPlugin = isCLI ? require('./plugins/CoreLoadPlugin').default : require('@dojo/cli-build-webpack/plugins/CoreLoadPlugin').default;
+const I18nPlugin = isCLI ? require('./plugins/I18nPlugin').default : require('@dojo/cli-build-webpack/plugins/I18nPlugin').default;
+const InjectModulesPlugin = isCLI ? require('./plugins/InjectModulesPlugin').default : require('@dojo/cli-build-webpack/plugins/InjectModulesPlugin').default;
 
 const webpackConfigGenerator = function (args: any = {}) {
 	const cssLoader = ExtractTextPlugin.extract({ use: 'css-loader?sourceMap' });
@@ -177,7 +177,10 @@ const webpackConfigGenerator = function (args: any = {}) {
 			extensions: ['.ts', '.js']
 		},
 		resolveLoader: {
-			modules: [ path.join(__dirname, 'loaders'), path.join(__dirname, 'node_modules'), 'node_modules' ]
+			modules: [
+				path.join(isCLI ? __dirname : '@dojo/cli-build-webpack', 'loaders'),
+				path.join(__dirname, 'node_modules'),
+				'node_modules' ]
 		},
 		module: {
 			rules: [
