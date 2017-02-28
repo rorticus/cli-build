@@ -9,9 +9,14 @@ const postcssImport = require('postcss-import');
 const postcssCssNext = require('postcss-cssnext');
 import { existsSync } from 'fs';
 import * as NormalModuleReplacementPlugin from 'webpack/lib/NormalModuleReplacementPlugin';
+
+const isCLI = process.env.DOJO_CLI;
+const prefix = isCLI ? './plugins/' : '@dojo/cli-build-webpack/';
 import CoreLoadPlugin from './plugins/CoreLoadPlugin';
 import I18nPlugin from './plugins/I18nPlugin';
 import InjectModulesPlugin from './plugins/InjectModulesPlugin';
+
+console.dir(process.env);
 
 module.exports = function (args: any) {
 	args = args || {};

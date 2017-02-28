@@ -154,6 +154,7 @@ const command: Command = {
 		const ejectOutput: EjectOutput = {
 			npm: {
 				devDependencies: {
+					'@dojo/cli-build-webpack': '>=2.0.0-alpha.13',
 					'copy-webpack-plugin': '^4.0.1',
 					'css-loader': '^0.25.0',
 					'dts-generator': '~1.7.0',
