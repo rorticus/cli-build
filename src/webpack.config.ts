@@ -187,7 +187,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 		},
 		resolveLoader: {
 			modules: [
-				path.join(isCLI ? __dirname : '@dojo/cli-build-webpack', 'loaders'),
+				path.join(isCLI ? __dirname : 'node_modules/@dojo/cli-build-webpack', 'loaders'),
 				path.join(__dirname, 'node_modules'),
 				'node_modules'
 			]
