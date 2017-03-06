@@ -1,9 +1,9 @@
 import { Command, EjectOutput, Helper, OptionsHelper } from '@dojo/cli/interfaces';
 import { Argv } from 'yargs';
-import config from './webpack.config';
 import * as fs from 'fs';
 import webpack = require('webpack');
 const WebpackDevServer: any = require('webpack-dev-server');
+const config: ConfigFactory = require('./webpack.config');
 
 export interface BuildArgs extends Argv {
 	locale: string;
@@ -15,6 +15,10 @@ export interface BuildArgs extends Argv {
 	elementPrefix: string;
 	withTests: boolean;
 	debug: boolean;
+}
+
+interface ConfigFactory {
+	(args: Partial<BuildArgs>): webpack.Config;
 }
 
 interface WebpackOptions {

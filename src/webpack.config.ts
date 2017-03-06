@@ -2,6 +2,7 @@ import webpack = require('webpack');
 import NormalModuleReplacementPlugin = require('webpack/lib/NormalModuleReplacementPlugin');
 import * as path from 'path';
 import { existsSync } from 'fs';
+import { BuildArgs } from './main';
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
@@ -12,15 +13,12 @@ const postcssCssNext = require('postcss-cssnext');
 const isCLI = process.env.DOJO_CLI;
 const CoreLoadPlugin = isCLI ? require('./plugins/CoreLoadPlugin').default : require('@dojo/cli-build-webpack/plugins/CoreLoadPlugin').default;
 const I18nPlugin = isCLI ? require('./plugins/I18nPlugin').default : require('@dojo/cli-build-webpack/plugins/I18nPlugin').default;
-const InjectModulesPlugin = isCLI ? require('./plugins/InjectModulesPlugin').default : require('@dojo/cli-build-webpack/plugins/InjectModulesPlugin').default;
 
 const basePath = process.cwd();
 
-import { BuildArgs } from './main';
-
 type IncludeCallback = (args: BuildArgs) => any;
 
-export default function webpackConfig(args: Partial<BuildArgs>) {
+function webpackConfig(args: Partial<BuildArgs>) {
 	args = args || {};
 
 	const cssLoader = ExtractTextPlugin.extract({ use: 'css-loader?sourceMap' });
@@ -248,3 +246,5 @@ export default function webpackConfig(args: Partial<BuildArgs>) {
 
 	return config;
 }
+
+module.exports = isCLI ? webpackConfig : webpackConfig({});

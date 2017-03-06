@@ -15,11 +15,13 @@ describe('main', () => {
 	let sandbox: sinon.SinonSandbox;
 
 	beforeEach(() => {
+		process.env.DOJO_CLI = true;
+
 		sandbox = sinon.sandbox.create();
 		mockModule = new MockModule('../../src/main');
 		mockModule.dependencies(['./webpack.config', 'webpack', 'webpack-dev-server']);
 		mockWebpack = mockModule.getMock('webpack').ctor;
-		mockWebpackConfigModule = mockModule.getMock('./webpack.config').default;
+		mockWebpackConfigModule = mockModule.getMock('./webpack.config').ctor;
 		mockWebpackConfig = {
 			entry: {
 				'src/main': [
@@ -257,9 +259,9 @@ describe('main', () => {
 
 			assert.isTrue('npm' in result, 'expecting npm property');
 			assert.isTrue('devDependencies' in result.npm, 'expecting a devDependencies property');
-			assert.isTrue(result.npm.devDependencies.length > 0, 'expecting a list of dev dependencies');
+			assert.isTrue(Object.keys(result.npm.devDependencies).length > 0, 'expecting a list of dev dependencies');
 			assert.isTrue('copy' in result, 'expecting a copy property');
-			assert.deepEqual(result.copy.files, [ 'webpack.config.js' ]);
+			assert.deepEqual(result.copy.files, [ './webpack.config.js' ]);
 		});
 	});
 });
