@@ -235,7 +235,7 @@ export default function webpackConfig(args: Partial<BuildArgs>) {
 		}
 	};
 
-	if (args.profile) {
+	if (args.debug) {
 		config.profile = true;
 	}
 

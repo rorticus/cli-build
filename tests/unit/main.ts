@@ -77,7 +77,7 @@ describe('main', () => {
 
 		assert.deepEqual(
 			options.args[ 8 ],
-			[ 'profile', { describe: 'Generate webpack profiling information', type: 'boolean' } ]
+			[ 'debug', { describe: 'Generate package information useful for debugging', type: 'boolean' } ]
 		);
 	});
 
@@ -173,7 +173,7 @@ describe('main', () => {
 		});
 	});
 
-	describe('profile options', () => {
+	describe('debug options', () => {
 		beforeEach(() => {
 			mockWebpack.returns({
 				run: sandbox.stub().yields(null, {
@@ -186,10 +186,10 @@ describe('main', () => {
 
 		it('should pass the profile option to webpack', () => {
 			return moduleUnderTest.run({}, {
-				profile: true
+				debug: true
 			}).then(() => {
 				assert.isTrue(mockWebpackConfigModule.calledWith({
-					profile: true
+					debug: true
 				}), JSON.stringify(mockWebpack.args));
 			});
 		});
@@ -208,7 +208,7 @@ describe('main', () => {
 			});
 
 			return moduleUnderTest.run(null, {
-				profile: true
+				debug: true
 			}).then(() => {
 				assert.isTrue(fsMock.called);
 				assert.strictEqual(fsMock.getCall(0).args[ 0 ], 'dist/profile.json');

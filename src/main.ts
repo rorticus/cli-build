@@ -14,7 +14,7 @@ export interface BuildArgs extends Argv {
 	element: string;
 	elementPrefix: string;
 	withTests: boolean;
-	profile: boolean;
+	debug: boolean;
 }
 
 interface WebpackOptions {
@@ -155,8 +155,8 @@ const command: Command = {
 			type: 'string'
 		});
 
-		options('profile', {
-			describe: 'Generate webpack profiling information',
+		options('debug', {
+			describe: 'Generate package information useful for debugging',
 			type: 'boolean'
 		});
 	},
