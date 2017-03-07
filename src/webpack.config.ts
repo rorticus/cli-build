@@ -11,8 +11,9 @@ const postcssImport = require('postcss-import');
 const postcssCssNext = require('postcss-cssnext');
 
 const isCLI = process.env.DOJO_CLI;
-const CoreLoadPlugin = isCLI ? require('./plugins/CoreLoadPlugin').default : require('@dojo/cli-build-webpack/plugins/CoreLoadPlugin').default;
-const I18nPlugin = isCLI ? require('./plugins/I18nPlugin').default : require('@dojo/cli-build-webpack/plugins/I18nPlugin').default;
+const packagePath = isCLI ? '.' : '@dojo/cli-build-webpack';
+const CoreLoadPlugin = require(`${packagePath}/plugins/CoreLoadPlugin`).default;
+const I18nPlugin = require(`${packagePath}/plugins/I18nPlugin`).default;
 
 const basePath = process.cwd();
 
