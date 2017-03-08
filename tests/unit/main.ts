@@ -258,6 +258,7 @@ describe('main', () => {
 	describe('eject', () => {
 		it('should contain eject information', () => {
 			mockReadFile.returns(`{
+				"name": "@dojo/cli-build-webpack",
 				"version": "test-version",
 				"dependencies": {
 					"dep1": "dep1v",

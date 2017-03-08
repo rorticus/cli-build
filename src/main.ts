@@ -5,6 +5,7 @@ import * as path from 'path';
 import webpack = require('webpack');
 const WebpackDevServer: any = require('webpack-dev-server');
 const config: ConfigFactory = require('./webpack.config');
+const pkgDir = require('pkg-dir');
 
 export interface BuildArgs extends Argv {
 	locale: string;
@@ -118,10 +119,12 @@ function compile(config: webpack.Config, options: WebpackOptions): Promise<any> 
 
 function buildNpmDependencies(): any {
 	try {
-		const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json')).toString());
+		const packagePath = pkgDir.sync(__dirname);
+		const packageJsonFilePath = path.join(packagePath, 'package.json');
+		const packageJson = <any> require(packageJsonFilePath);
 
 		return {
-			'@dojo/cli-build-webpack': packageJson.version,
+			[packageJson.name]: packageJson.version,
 			...packageJson.dependencies
 		};
 	}
