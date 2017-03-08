@@ -3,6 +3,7 @@ import NormalModuleReplacementPlugin = require('webpack/lib/NormalModuleReplacem
 import * as path from 'path';
 import { existsSync } from 'fs';
 import { BuildArgs } from './main';
+import Set from '@dojo/shim/Set';
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');

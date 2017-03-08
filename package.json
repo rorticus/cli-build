@@ -45,10 +45,10 @@
     "yargs": "^5.0.0"
   },
   "dependencies": {
-    "@dojo/core": "2.0.0-alpha.20",
-    "@dojo/has": "2.0.0-alpha.7",
+    "@dojo/core": "2.0.0-alpha.25",
+    "@dojo/has": "2.0.0-alpha.8",
     "@dojo/i18n": "2.0.0-alpha.5",
-    "@dojo/shim": "2.0.0-beta.8",
+    "@dojo/shim": "2.0.0-beta.10",
     "cldr-data": "^30.0.1",
     "copy-webpack-plugin": "^4.0.1",
     "css-loader": "^0.26.1",

@@ -2,6 +2,7 @@ import webpack = require('webpack');
 import { createSourceFile, forEachChild, Node, ScriptTarget, SyntaxKind } from 'typescript';
 import { statSync } from 'fs';
 import { dirname, resolve } from 'path';
+import Map from '@dojo/shim/Map';
 const DtsCreator = require('typed-css-modules');
 const { getOptions } = require('loader-utils');
 const instances = require('ts-loader/dist/instances');
