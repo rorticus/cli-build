@@ -6,7 +6,7 @@
 
 The official dojo 2 build command.
 
-*WARNING* This is beta software. It is not yet production ready, so you should use at your own risk.
+*WARNING* This is _beta_ software. While we do not anticipate significant changes to the API at this stage, we may feel the need to do so. This is not yet production ready, so you should use at your own risk. 
 
 - [Usage](#usage)
 - [Features](#features)
@@ -34,7 +34,7 @@ npm install -g @dojo/cli-build
 
 ## Features
 
-`@dojo/cli-build` is an optional command for the [Dojo CLI](https://github.com/dojo/cli).
+`@dojo/cli-build` is an optional command for the [`@dojo/cli`](https://github.com/dojo/cli).
 
 ### Building
 
@@ -60,23 +60,23 @@ dojo build --help
 
 ### Building a custom element
 
-`@dojo/cli-build-webpack` can also build custom web elements. Custom elements are built by providing the name of a [custom element descriptor](https://github.com/dojo/widget-core#web-components).
+`@dojo/cli-build-webpack` can also build custom web elements as per the [custom web v1 specification](https://www.w3.org/TR/2016/WD-custom-elements-20161013/). Custom elements are built by providing the name of a [custom element descriptor](https://github.com/dojo/widget-core#web-components).
 
 ```bash
-dojo build --element=src/path/to/createMySpecialElement.ts
+dojo build --element=src/path/to/createTheSpecialElement.ts
 ```
 
-This will output a `dist/my-special` directory containing:
+This will output a `dist/the-special` directory containing:
 
-* `my-special.js` - JavaScript file containing code specific to the `MySpecial` widget.
+* `the-special.js` - JavaScript file containing code specific to the `TheSpecial` widget.
 * `widget-core.js` - JavaScript file containing shared widget code. This is separated to allow for better caching by the browser.
-* `my-special.css` - CSS relating to the `MySpecial` widget.
-* `my-special.html` - HTML import file that will import all the scripts and styles needed to use the element.
+* `the-special.css` - CSS relating to the `TheSpecial` widget.
+* `the-special.html` - HTML import file that will import all the scripts and styles needed to use the element.
 
 If the source file does not follow the pattern `create[custom element]Element`, `@dojo/cli-build-webpack` cannot determine what the name of the custom element should be. In this case, you can specify the `--elementPrefix` option to explicitly name the element.
 
 ```bash
-dojo build --element=src/path/to/element.ts --elementPrefix=my-special
+dojo build --element=src/path/to/element.ts --elementPrefix=the-special
 ```
 
 ### Eject
