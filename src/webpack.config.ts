@@ -122,7 +122,9 @@ function webpackConfig(args: Partial<BuildArgs>) {
 					{ context: 'src', from: '**/*', ignore: '*.ts' }
 				]);
 			}),
-			new CoreLoadPlugin(),
+			new CoreLoadPlugin({
+				detectLazyLoads: !args.disableLazyWidgetDetection
+			}),
 			...includeWhen(args.element, () => {
 				return [ new webpack.optimize.CommonsChunkPlugin({
 					name: 'widget-core',
