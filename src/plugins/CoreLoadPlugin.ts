@@ -2,6 +2,7 @@ import * as path from 'path';
 import { getBasePath, resolveMid } from './util/main';
 import { CallExpression, Program } from 'estree';
 import { getNextItem } from './util/parser';
+import Set from '@dojo/shim/Set';
 import ConcatSource = require('webpack-sources/lib/ConcatSource');
 import NormalModuleReplacementPlugin = require('webpack/lib/NormalModuleReplacementPlugin');
 import Compiler = require('webpack/lib/Compiler');
@@ -114,6 +115,8 @@ export interface DojoLoadChunkNames {
 export interface DojoLoadPluginOptions {
 	detectLazyLoads?: boolean;
 	chunkNames?: DojoLoadChunkNames;
+	ignoredModules?: string[];
+	basePath?: string;
 }
 
 /**
@@ -123,12 +126,24 @@ export interface DojoLoadPluginOptions {
 export default class DojoLoadPlugin {
 	detectLazyLoads: boolean;
 	lazyChunkNames: DojoLoadChunkNames;
+	ignoredModules: Set<string>;
 
 	constructor(options: DojoLoadPluginOptions = {}) {
-		const { detectLazyLoads, chunkNames } = options;
+		const { detectLazyLoads, chunkNames, ignoredModules, basePath = '' } = options;
 
 		this.detectLazyLoads = detectLazyLoads || false;
 		this.lazyChunkNames = chunkNames || {};
+		this.ignoredModules = new Set<string>();
+
+		if (ignoredModules) {
+			ignoredModules.forEach(moduleName => {
+				const absolutePath = path.resolve(basePath, moduleName);
+
+				this.ignoredModules.add(absolutePath);
+			});
+
+			console.log(this.ignoredModules);
+		}
 	}
 
 	/**
@@ -146,6 +161,7 @@ export default class DojoLoadPlugin {
 		const issuers: string[] = [];
 		const detectLazyLoads = this.detectLazyLoads;
 		const chunkNames = this.lazyChunkNames;
+		const ignoredModules = this.ignoredModules;
 
 		compiler.apply(new NormalModuleReplacementPlugin(/@dojo\/core\/load\.js/, resolveMid('@dojo/core/load/webpack')));
 
@@ -177,13 +193,19 @@ export default class DojoLoadPlugin {
 
 									if (first.type === 'Identifier' && first.name === 'require') {
 										if (second.type === 'Literal' && typeof(second.value) === 'string') {
-											const path = [ ...callExpressionAndParent.path ];
+											const callPath = [ ...callExpressionAndParent.path ];
+
+											const absolutePath = path.resolve(path.dirname(userRequest), second.value);
+
+											if (ignoredModules.has(absolutePath)) {
+												return;
+											}
 
 											let foundDefineCall = false;
 
-											let index = path.length - 1;
+											let index = callPath.length - 1;
 											while (index > 0) {
-												const entry = path[ index-- ];
+												const entry = callPath[ index-- ];
 
 												if (entry.type === 'CallExpression') {
 													if (entry.callee.type === 'MemberExpression' && entry.callee.property.type === 'Identifier' && entry.callee.property.name === 'define') {
@@ -204,9 +226,9 @@ export default class DojoLoadPlugin {
 											 Find the containing function of the expression. We'll want this whole
 											 function to be wrapped in the require.ensure
 											 */
-											let fnExpression = path.pop();
+											let fnExpression = callPath.pop();
 											while (fnExpression && fnExpression.type !== 'FunctionExpression') {
-												fnExpression = path.pop();
+												fnExpression = callPath.pop();
 											}
 
 											/*
@@ -228,7 +250,7 @@ export default class DojoLoadPlugin {
 											/*
 											 Find an appropriate chunk name (null is an appropriate chunk name).
 											 */
-											let chunkName = null;
+											let chunkName = path.basename(absolutePath);
 
 											const applicableNames = Object.keys(chunkNames).filter(name => {
 												return chunkNames[ name ].test(<string> second.value);

@@ -123,7 +123,8 @@ function webpackConfig(args: Partial<BuildArgs>) {
 				]);
 			}),
 			new CoreLoadPlugin({
-				detectLazyLoads: !args.disableLazyWidgetDetection
+				detectLazyLoads: !args.disableLazyWidgetDetection,
+				basePath
 			}),
 			...includeWhen(args.element, () => {
 				return [ new webpack.optimize.CommonsChunkPlugin({
@@ -131,7 +132,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 					filename: 'widget-core.js'
 				}) ];
 			}),
-			new webpack.optimize.UglifyJsPlugin({ sourceMap: true, compress: { warnings: false }, exclude: /tests[/]/ }),
+			// new webpack.optimize.UglifyJsPlugin({ sourceMap: true, compress: { warnings: false }, exclude: /tests[/]/ }),
 			includeWhen(args.element, args => {
 				return new HtmlWebpackPlugin({
 					inject: false,
