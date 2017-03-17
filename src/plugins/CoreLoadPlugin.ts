@@ -133,7 +133,6 @@ export default class DojoLoadPlugin {
 
 		this._detectLazyLoads = detectLazyLoads || false;
 		this._lazyChunkNames = chunkNames || {};
-		this._ignoredModules = new Set<string>();
 
 		if (ignoredModules) {
 			ignoredModules.forEach(moduleName => {
