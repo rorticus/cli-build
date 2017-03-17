@@ -126,7 +126,7 @@ export interface DojoLoadPluginOptions {
 export default class DojoLoadPlugin {
 	private _detectLazyLoads: boolean;
 	private _lazyChunkNames: DojoLoadChunkNames;
-	private _ignoredModules: Set<string>;
+	private _ignoredModules = new Set<string>();
 
 	constructor(options: DojoLoadPluginOptions = {}) {
 		const { detectLazyLoads, chunkNames, ignoredModules, basePath = '' } = options;
