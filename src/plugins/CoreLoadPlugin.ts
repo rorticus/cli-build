@@ -185,6 +185,12 @@ export default class DojoLoadPlugin {
 							const { userRequest } = parser.state.current as any;
 
 							if (userRequest) {
+								const source = (<any> parser.state.module)._source;
+
+								if (!source || source.source().indexOf('@dojo/core/load') === -1) {
+									return;
+								}
+
 								findCallExpressions(program).filter(expression => expression.callExpression.arguments.length === 2).forEach(callExpressionAndParent => {
 									const [ first, second ] = callExpressionAndParent.callExpression.arguments;
 
