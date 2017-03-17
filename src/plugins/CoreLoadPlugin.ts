@@ -124,25 +124,23 @@ export interface DojoLoadPluginOptions {
  * custom function that maps string module IDs to webpack's numerical module IDs.
  */
 export default class DojoLoadPlugin {
-	detectLazyLoads: boolean;
-	lazyChunkNames: DojoLoadChunkNames;
-	ignoredModules: Set<string>;
+	private _detectLazyLoads: boolean;
+	private _lazyChunkNames: DojoLoadChunkNames;
+	private _ignoredModules: Set<string>;
 
 	constructor(options: DojoLoadPluginOptions = {}) {
 		const { detectLazyLoads, chunkNames, ignoredModules, basePath = '' } = options;
 
-		this.detectLazyLoads = detectLazyLoads || false;
-		this.lazyChunkNames = chunkNames || {};
-		this.ignoredModules = new Set<string>();
+		this._detectLazyLoads = detectLazyLoads || false;
+		this._lazyChunkNames = chunkNames || {};
+		this._ignoredModules = new Set<string>();
 
 		if (ignoredModules) {
 			ignoredModules.forEach(moduleName => {
 				const absolutePath = path.resolve(basePath, moduleName);
 
-				this.ignoredModules.add(absolutePath);
+				this._ignoredModules.add(absolutePath);
 			});
-
-			console.log(this.ignoredModules);
 		}
 	}
 
@@ -159,9 +157,9 @@ export default class DojoLoadPlugin {
 		const basePath = compiler.options.resolve.modules[0];
 		const bundleLoader = /bundle.*\!/;
 		const issuers: string[] = [];
-		const detectLazyLoads = this.detectLazyLoads;
-		const chunkNames = this.lazyChunkNames;
-		const ignoredModules = this.ignoredModules;
+		const detectLazyLoads = this._detectLazyLoads;
+		const chunkNames = this._lazyChunkNames;
+		const ignoredModules = this._ignoredModules;
 
 		compiler.apply(new NormalModuleReplacementPlugin(/@dojo\/core\/load\.js/, resolveMid('@dojo/core/load/webpack')));
 
@@ -265,7 +263,7 @@ export default class DojoLoadPlugin {
 											 */
 											const dep = new RequireEnsureDependenciesBlock(temp, fnExpression, chunkName, null, parser.state.module, fnExpression.loc);
 
-											const old = parser.state.current;
+											const old: any = parser.state.current;
 											parser.state.current = dep;
 
 											/*
@@ -281,10 +279,10 @@ export default class DojoLoadPlugin {
 											 By default, the require.ensure is not going to execute when we want. We wrap it in a function block
 											 to control the execution.
 											 */
-											(<any> old).addDependency(new ConstDependency('function() { return (', fnExpression.range[0]));
-											(<any> old).addDependency(new ConstDependency('})', fnExpression.range[1] + 1));
+											old.addDependency(new ConstDependency('function() { return (', fnExpression.range[0]));
+											old.addDependency(new ConstDependency('})', fnExpression.range[1] + 1));
 
-											(<any> old).addBlock(dep);
+											old.addBlock(dep);
 
 											parser.state.current = old;
 										}

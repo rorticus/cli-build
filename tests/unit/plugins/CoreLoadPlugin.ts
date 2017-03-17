@@ -259,7 +259,7 @@ describe('core-load', () => {
 					})
 				]
 			}, (output: string) => {
-				assert.include(output, '__webpack_require__.e/* require.ensure */(0)', 'Should have added ensure');
+				assert.include(output, '__webpack_require__.e/* require.ensure */(0', 'Should have added ensure');
 				resolve();
 			});
 		});
@@ -274,7 +274,7 @@ describe('core-load', () => {
 					})
 				]
 			}, (output: string) => {
-				assert.notInclude(output, '__webpack_require__.e/* require.ensure */(0)', 'Should not have added ensure');
+				assert.notInclude(output, '__webpack_require__.e/* require.ensure */(0', 'Should not have added ensure');
 				resolve();
 			});
 		});

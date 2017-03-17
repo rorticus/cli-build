@@ -92,6 +92,10 @@ export const getNextItem = (function () {
 	});
 
 	return function (item: any): any {
+		if (!item) {
+			return null;
+		}
+
 		const getter = nextItemMap[ item.type ];
 		return typeof getter === 'function' ? getter(item) : null;
 	};
@@ -122,6 +126,10 @@ export function isArrayExpression(item: any): item is ArrayExpression {
  * `true` if the node represents either function declaration or a function expression.
  */
 export function isFunctionDefinition(item: any): item is BaseFunction {
+	if (!item) {
+		return false;
+	}
+
 	const { type } = item;
 	return type === 'FunctionDeclaration' || type === 'ArrowFunctionExpression' || type === 'FunctionExpression';
 }
@@ -137,7 +145,7 @@ export function isFunctionDefinition(item: any): item is BaseFunction {
  * A list of variable names.
  *
  * @return
- * `true` if the
+ * `true` if the node is a shadowing node
  */
 export function isShadowing(item: any, importNames: string[]): boolean {
 	if (isFunctionDefinition(item)) {
