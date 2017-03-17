@@ -37,7 +37,7 @@ function compile(entry: any, options: any, callback: any) {
 
 	options.output.pathinfo = true;
 
-	let output = '';
+	const files: any = {};
 
 	const c = webpack(options);
 	c.outputFileSystem = {
@@ -48,7 +48,7 @@ function compile(entry: any, options: any, callback: any) {
 			callback();
 		},
 		writeFile: function (name: any, content: any, callback: any) {
-			output = content.toString();
+			files[path.basename(name)] = content.toString();
 			callback();
 		}
 	};
@@ -57,7 +57,7 @@ function compile(entry: any, options: any, callback: any) {
 		if (err) {
 			throw err;
 		}
-		callback(output);
+		callback(files);
 	});
 }
 
@@ -253,13 +253,16 @@ describe('core-load', () => {
 	it('should detect lazy widget loads', () => {
 		return new Promise((resolve) => {
 			compile('./lazy-load/with-define', {
+				output: {
+					chunkFilename: '[name].js'
+				},
 				plugins: [
 					new LoadPlugin({
 						detectLazyLoads: true
 					})
 				]
-			}, (output: string) => {
-				assert.include(output, '__webpack_require__.e/* require.ensure */(0', 'Should have added ensure');
+			}, (files: any) => {
+				assert.sameMembers(Object.keys(files), ['main.js', 'some-module.js']);
 				resolve();
 			});
 		});
@@ -268,13 +271,60 @@ describe('core-load', () => {
 	it('should require lazy widget loads in a define call', () => {
 		return new Promise((resolve) => {
 			compile('./lazy-load/simple', {
+				output: {
+					chunkFilename: '[name].js'
+				},
 				plugins: [
 					new LoadPlugin({
 						detectLazyLoads: true
 					})
 				]
-			}, (output: string) => {
-				assert.notInclude(output, '__webpack_require__.e/* require.ensure */(0', 'Should not have added ensure');
+			}, (files: any) => {
+				assert.sameMembers(Object.keys(files), ['main.js']);
+				resolve();
+			});
+		});
+	});
+
+	it('should ignore ignored modules', () => {
+		return new Promise((resolve) => {
+			compile('./lazy-load/with-define', {
+				output: {
+					chunkFilename: '[name].js'
+				},
+				plugins: [
+					new LoadPlugin({
+						detectLazyLoads: true,
+						ignoredModules: [
+							'../../support/lazy-load/some-module'
+						],
+						basePath: path.join(__dirname, '../../../_build/tests/unit/plugins')
+					})
+				]
+			}, (files: any) => {
+				assert.sameMembers(Object.keys(files), ['main.js']);
+				resolve();
+			});
+		});
+	});
+
+	it('should find chunk names from regular expressions', () => {
+		return new Promise((resolve) => {
+			compile('./lazy-load/with-define', {
+				output: {
+					chunkFilename: '[name].js'
+				},
+				plugins: [
+					new LoadPlugin({
+						detectLazyLoads: true,
+						basePath: path.join(__dirname, '../../../_build/tests/unit/plugins'),
+						chunkNames: {
+							testChunk: new RegExp(/some-module/)
+						}
+					})
+				]
+			}, (files: any) => {
+				assert.sameMembers(Object.keys(files), ['main.js', 'testChunk.js']);
 				resolve();
 			});
 		});

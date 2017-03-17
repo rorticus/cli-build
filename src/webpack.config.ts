@@ -53,6 +53,16 @@ function webpackConfig(args: Partial<BuildArgs>) {
 		return predicate ? callback(args as any) : (elseCallback ? elseCallback(args as any) : []);
 	}
 
+	const ignoredModules: string[] = [];
+
+	if (args.bundles && Object.keys(args.bundles)) {
+		Object.keys(args.bundles).forEach(bundleName => {
+			(args.bundles || {})[bundleName].forEach(moduleName => {
+				ignoredModules.push(moduleName);
+			});
+		});
+	}
+
 	const config: webpack.Config = {
 		externals: [
 			function (context, request, callback) {
@@ -124,6 +134,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			}),
 			new CoreLoadPlugin({
 				detectLazyLoads: !args.disableLazyWidgetDetection,
+				ignoredModules,
 				basePath
 			}),
 			...includeWhen(args.element, () => {
