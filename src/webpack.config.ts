@@ -111,7 +111,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			};
 		}),
 		plugins: [
-			new NormalModuleReplacementPlugin(/\.css$/, result => {
+			new NormalModuleReplacementPlugin(/\.m.css$/, result => {
 				const requestFileName = path.resolve(result.context, result.request);
 				const jsFileName = requestFileName + '.js';
 
@@ -119,7 +119,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 					replacedModules.delete(requestFileName);
 				} else if (existsSync(jsFileName)) {
 					replacedModules.add(requestFileName);
-					result.request = result.request.replace(/\\.m\.css$/, '.css.js');
+					result.request = result.request.replace(/\.m\.css$/, '.css.js');
 				}
 			}),
 			new webpack.ContextReplacementPlugin(/dojo-app[\\\/]lib/, { test: () => false }),
