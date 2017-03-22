@@ -95,7 +95,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 		}, args => {
 			return {
 				'src/main': [
-					path.join(basePath, 'src/main.m.css'),
+					path.join(basePath, 'src/main.css'),
 					path.join(basePath, 'src/main.ts')
 				],
 				...includeWhen(args.withTests, () => {
@@ -103,7 +103,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 						'../_build/tests/unit/all': [ path.join(basePath, 'tests/unit/all.ts') ],
 						'../_build/tests/functional/all': [ path.join(basePath, 'tests/functional/all.ts') ],
 						'../_build/src/main': [
-							path.join(basePath, 'src/main.m.css'),
+							path.join(basePath, 'src/main.css'),
 							path.join(basePath, 'src/main.ts')
 						]
 					};
@@ -130,7 +130,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			}),
 			includeWhen(args.element, () => {
 				return new CopyWebpackPlugin([
-					{ context: 'src', from: '**/*', ignore: [ '*.ts', '*.m.css', '*.html' ] }
+					{ context: 'src', from: '**/*', ignore: [ '*.ts', '*.css', '*.html' ] }
 				]);
 			}, () => {
 				return new CopyWebpackPlugin([
