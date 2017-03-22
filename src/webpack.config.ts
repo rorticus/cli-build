@@ -95,7 +95,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 		}, args => {
 			return {
 				'src/main': [
-					path.join(basePath, 'src/main.css'),
+					path.join(basePath, 'src/main.m.css'),
 					path.join(basePath, 'src/main.ts')
 				],
 				...includeWhen(args.withTests, () => {
@@ -103,7 +103,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 						'../_build/tests/unit/all': [ path.join(basePath, 'tests/unit/all.ts') ],
 						'../_build/tests/functional/all': [ path.join(basePath, 'tests/functional/all.ts') ],
 						'../_build/src/main': [
-							path.join(basePath, 'src/main.css'),
+							path.join(basePath, 'src/main.m.css'),
 							path.join(basePath, 'src/main.ts')
 						]
 					};
@@ -119,7 +119,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 					replacedModules.delete(requestFileName);
 				} else if (existsSync(jsFileName)) {
 					replacedModules.add(requestFileName);
-					result.request = result.request.replace(/\.css$/, '.css.js');
+					result.request = result.request.replace(/\\.m\.css$/, '.css.js');
 				}
 			}),
 			new webpack.ContextReplacementPlugin(/dojo-app[\\\/]lib/, { test: () => false }),
@@ -130,7 +130,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			}),
 			includeWhen(args.element, () => {
 				return new CopyWebpackPlugin([
-					{ context: 'src', from: '**/*', ignore: [ '*.ts', '*.css', '*.html' ] }
+					{ context: 'src', from: '**/*', ignore: [ '*.ts', '*.m.css', '*.html' ] }
 				]);
 			}, () => {
 				return new CopyWebpackPlugin([
@@ -236,7 +236,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 				}),
 				{ test: /@dojo\/.*\.js$/, enforce: 'pre', loader: 'source-map-loader', options: { includeModulePaths: true } },
 				{ test: /src[\\\/].*\.ts?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=ts&instanceName=0_dojo' },
-				{ test: /src[\\\/].*\.css?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=css' },
+				{ test: /src[\\\/].*\.m\.css?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=css' },
 				{ test: /src[\\\/].*\.ts?$/, use: [
 					'umd-compat-loader',
 					{
