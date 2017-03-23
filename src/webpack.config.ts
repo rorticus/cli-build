@@ -119,7 +119,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 					replacedModules.delete(requestFileName);
 				} else if (existsSync(jsFileName)) {
 					replacedModules.add(requestFileName);
-					result.request = result.request.replace(/\.m\.css$/, '.css.js');
+					result.request = result.request.replace(/\.m\.css$/, '.m.css.js');
 				}
 			}),
 			new webpack.ContextReplacementPlugin(/dojo-app[\\\/]lib/, { test: () => false }),
@@ -256,7 +256,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 				{ test: /.*\.(gif|png|jpe?g|svg)$/i, loader: 'file-loader?hash=sha512&digest=hex&name=[hash:base64:8].[ext]' },
 				{ test: /\.css$/, exclude: /src[\\\/].*/, loader: cssLoader },
 				{ test: /src[\\\/].*\.css?$/, loader: cssModuleLoader },
-				{ test: /\.css.js$/, exclude: /src[\\\/].*/, use: ['json-css-module-loader'] },
+				{ test: /\.m\.css.js$/, exclude: /src[\\\/].*/, use: ['json-css-module-loader'] },
 				...includeWhen(args.withTests, () => {
 					return [
 						{ test: /tests[\\\/].*\.ts?$/, use: [
