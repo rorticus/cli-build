@@ -82,7 +82,7 @@ function mergeConfigArgs(...sources: BuildArgs[]): BuildArgs {
 	}, Object.create(null));
 }
 
-function watch(config: webpack.Config, options: WebpackOptions, args: BuildArgs) {
+function watch(config: webpack.Config, options: WebpackOptions, args: BuildArgs): Promise<void> {
 	config.devtool = 'inline-source-map';
 
 	config.entry = (function (entry) {
@@ -115,7 +115,7 @@ function watch(config: webpack.Config, options: WebpackOptions, args: BuildArgs)
 	});
 }
 
-function compile(config: webpack.Config, options: WebpackOptions) {
+function compile(config: webpack.Config, options: WebpackOptions): Promise<void> {
 	const compiler = webpack(config);
 	return new Promise((resolve, reject) => {
 		compiler.run((err, stats) => {
@@ -131,7 +131,7 @@ function compile(config: webpack.Config, options: WebpackOptions) {
 
 				console.log(stats.toString(options.stats));
 			}
-			resolve({});
+			resolve();
 		});
 	});
 }
