@@ -140,7 +140,10 @@ export default class DojoLoadPlugin {
 	constructor(options: DojoLoadPluginOptions = {}) {
 		const { basePath = '', chunkNames, detectLazyLoads, ignoredModules, mapAppModules = false } = options;
 
-		this._basePath = basePath && basePath.replace(/\\/g, '/').replace(/^[cC]:/, '');
+		console.log(options);
+		console.log(`basePath is ${basePath}`);
+
+		this._basePath = basePath.replace(/\\/g, '/').replace(/^[cC]:/, '');
 		this._detectLazyLoads = detectLazyLoads || false;
 		this._lazyChunkNames = chunkNames || {};
 		this._mapAppModules = mapAppModules;
