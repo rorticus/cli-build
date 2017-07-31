@@ -15,7 +15,6 @@ const postcssCssNext = require('postcss-cssnext');
 
 const isCLI = process.env.DOJO_CLI;
 const packagePath = isCLI ? '.' : '@dojo/cli-build-webpack';
-const CoreLoadPlugin = require(`${packagePath}/plugins/CoreLoadPlugin`).default;
 const I18nPlugin = require(`${packagePath}/plugins/I18nPlugin`).default;
 const basePath = process.cwd();
 
@@ -137,12 +136,6 @@ function webpackConfig(args: Partial<BuildArgs>) {
 				return new CopyWebpackPlugin([
 					{ context: 'src', from: '**/*', ignore: '*.ts' }
 				]);
-			}),
-			new CoreLoadPlugin({
-				basePath,
-				detectLazyLoads: !args.disableLazyWidgetDetection,
-				ignoredModules,
-				mapAppModules: args.withTests
 			}),
 			...includeWhen(args.element, () => {
 				return [ new webpack.optimize.CommonsChunkPlugin({
