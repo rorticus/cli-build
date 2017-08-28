@@ -1,9 +1,9 @@
 import webpack = require('webpack');
 import NormalModuleReplacementPlugin = require('webpack/lib/NormalModuleReplacementPlugin');
-import * as path from 'path';
-import { existsSync, readFileSync } from 'fs';
-import { BuildArgs } from './main';
 import Set from '@dojo/shim/Set';
+import { existsSync, readFileSync } from 'fs';
+import * as path from 'path';
+import { BuildArgs } from './main';
 import StaticOptmizePlugin from '@dojo/static-optimize-plugin/StaticOptimizePlugin';
 import GetFeaturesType from './getFeatures';
 const IgnorePlugin = require('webpack/lib/IgnorePlugin');
@@ -40,6 +40,10 @@ function getJsonpFunction(name?: string) {
 		jsonpFunction += '_' + name.replace(/[^a-z0-9_]/g, ' ').trim().replace(/\s+/g, '_');
 	}
 	return jsonpFunction;
+}
+
+interface BuildConfigOptions {
+	target?: 'web' | 'node';
 }
 
 function webpackConfig(args: Partial<BuildArgs>) {
@@ -90,63 +94,71 @@ function webpackConfig(args: Partial<BuildArgs>) {
 		path: path.resolve('./dist')
 	};
 
-	const config: webpack.Config = {
-		externals: [
-			function (context, request, callback) {
-				const externals = externalDependencies || [];
-				function findExternalType(externals: (string | { name?: string; type?: string; })[]): string | void {
-					for (let external of externals) {
-						const name = external && (typeof external === 'string' ? external : external.name);
-						if (name && new RegExp(`^${name}[!\/]`).test(request)) {
-							return (typeof external === 'string' ? '' : external.type) || 'amd';
+	function buildConfig(config: BuildConfigOptions = {}): webpack.Config {
+		const { target = 'web' } = config;
+		const testCodePath = target === 'node' ? 'node' : '.';
+
+		return {
+			target,
+			externals: [
+				function (context, request, callback) {
+					const externals = externalDependencies || [];
+					function findExternalType(externals: (string | { name?: string; type?: string; })[]): string | void {
+						for (let external of externals) {
+							const name = external && (typeof external === 'string' ? external : external.name);
+							if (name && new RegExp(`^${name}[!\/]`).test(request)) {
+								return (typeof external === 'string' ? '' : external.type) || 'amd';
+							}
 						}
 					}
-				}
 
-				const type = findExternalType(externals.concat('intern'));
-				if (type) {
-					return callback(null, `${type} ${request}`);
-				}
+					const type = findExternalType(externals.concat('intern'));
+					if (type) {
+						return callback(null, `${type} ${request}`);
+					}
 
-				callback();
-			}
-		],
-		entry: includeWhen(args.element, args => {
-			return {
-				[args.elementPrefix]: `${__dirname}/templates/custom-element.js`,
-				'widget-core': '@dojo/widget-core'
-			};
-		}, args => {
-			return {
-				'src/main': [
-					path.join(basePath, 'src/main.css'),
-					path.join(basePath, 'src/main.ts')
-				],
-				...includeWhen(args.withTests, () => {
-					return {
-						'../_build/tests/unit/all': [ path.join(basePath, 'tests/unit/all.ts') ],
-						'../_build/tests/functional/all': [ path.join(basePath, 'tests/functional/all.ts') ],
-						'../_build/src/main': [
-							path.join(basePath, 'src/main.css'),
-							path.join(basePath, 'src/main.ts')
-						]
-					};
-				})
-			};
-		}),
-		node: {
+					callback();
+				}
+			],
+			entry: includeWhen(args.element, args => {
+				return {
+					[args.elementPrefix]: `${__dirname}/templates/custom-element.js`,
+					'widget-core': '@dojo/widget-core'
+				};
+			}, args => {
+				return {
+					...includeWhen(args.withTests, () => {
+						return {
+							[`../_build/${testCodePath}/tests/unit/all`]: [ path.join(basePath, 'tests/unit/all.ts') ],
+							[`../_build/${testCodePath}/tests/functional/all`]: [ path.join(basePath, 'tests/functional/all.ts') ],
+							[`../_build/${testCodePath}/src/main`]: [
+								path.join(basePath, 'src/main.css'),
+								path.join(basePath, 'src/main.ts')
+							]
+						};
+					}, () => {
+						return {
+							'src/main': [
+								path.join(basePath, 'src/main.css'),
+								path.join(basePath, 'src/main.ts')
+							]
+						};
+					})
+				};
+			}),
+			node: {
 			dgram: 'empty',
-			net: 'empty',
-			tls: 'empty',
-			fs: 'empty'
+				net: 'empty',
+				tls: 'empty',
+				fs: 'empty'
 		},
-		plugins: [
-			new AutoRequireWebpackPlugin(/src\/main/),
-			new webpack.BannerPlugin(readFileSync(require.resolve(`${packagePath}/banner.md`), 'utf8')),
-			new IgnorePlugin(/request\/providers\/node/),
-			new NormalModuleReplacementPlugin(/\.m.css$/, result => {
-				const requestFileName = path.resolve(result.context, result.request);
-				const jsFileName = requestFileName + '.js';
+			plugins: [
+				new AutoRequireWebpackPlugin(/src\/main/),
+				new webpack.BannerPlugin(readFileSync(require.resolve(`${packagePath}/banner.md`), 'utf8')),
+				new IgnorePlugin(/request\/providers\/node/),
+				new NormalModuleReplacementPlugin(/\.m.css$/, result => {
+					const requestFileName = path.resolve(result.context, result.request);
+					const jsFileName = requestFileName + '.js';
 
 				if (replacedModules.has(requestFileName)) {
 					replacedModules.delete(requestFileName);
@@ -164,7 +176,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			}, () => {
 				return new ExtractTextPlugin({ filename: 'main.css', allChunks: true });
 			}),
-			...includeWhen(!args.watch && !args.withTests, (args) => {
+			...includeWhen(!args.watch && !args.withTests, () => {
 				return [ new OptimizeCssAssetsPlugin({
 					cssProcessorOptions: {
 						map: { inline: false }
@@ -186,12 +198,11 @@ function webpackConfig(args: Partial<BuildArgs>) {
 				ignoredModules,
 				mapAppModules: args.withTests
 			}),
-			new StaticOptmizePlugin(hasFlags),
-			...includeWhen(args.element, () => {
-				return [ new webpack.optimize.CommonsChunkPlugin({
+			new StaticOptmizePlugin(hasFlags), ...includeWhen(args.element, () => {
+				return [new webpack.optimize.CommonsChunkPlugin({
 					name: 'widget-core',
 					filename: 'widget-core.js'
-				}) ];
+				})];
 			}),
 			...includeWhen(!args.watch && !args.withTests, () => {
 				return [ new webpack.optimize.UglifyJsPlugin({
@@ -240,22 +251,33 @@ function webpackConfig(args: Partial<BuildArgs>) {
 					]),
 					new HtmlWebpackPlugin ({
 						inject: true,
-						chunks: [ '../_build/src/main' ],
+						chunks: [ 'src', `../_build/${testCodePath}/src/main` ],
 						template: 'src/index.html',
-						filename: '../_build/src/index.html'
-					})
-				];
+						filename: `../_build/${testCodePath}/src/index.html`
+					}),
+				new webpack.optimize.CommonsChunkPlugin({
+							name: 'src',
+							filename: `../_build/${testCodePath}/src/src.js`,
+							chunks: [`../_build/${testCodePath}/src/main`, '../_build/tests/unit/all'],
+							minChunks: (module: any) => {
+								if (module.resource && !(/^.*\.(ts)$/).test(module.resource)) {
+									return false;
+								}
+
+								return module.context && module.context.indexOf('src/') !== -1;
+							}
+						})];
 			}),
 			...includeWhen(includesExternals, () => [
 				new ExternalLoaderPlugin({
 					dependencies: externalDependencies,
 					outputPath: args.externals && args.externals.outputPath,
-					pathPrefix: args.withTests ? '../_build/src' : ''
+					pathPrefix: args.withTests ? `../_build/${testCodePath}/src` : ''
 				})
 			])
 
-		],
-		output: includeWhen(args.element, args => {
+			],
+				output: includeWhen(args.element, args => {
 			return Object.assign(outputConfig, {
 				libraryTarget: 'jsonp',
 				path: path.resolve(`./dist/${args.elementPrefix}`)
@@ -266,100 +288,118 @@ function webpackConfig(args: Partial<BuildArgs>) {
 				umdNamedDefine: true
 			});
 		}),
-		devtool: 'source-map',
-		resolve: {
+			devtool: 'source-map',
+			resolve: {
 			modules: [
 				basePath,
 				path.join(basePath, 'node_modules')
 			],
-			extensions: ['.ts', '.tsx', '.js']
+				extensions: ['.ts', '.tsx', '.js']
 		},
-		resolveLoader: {
-			modules: [
-				path.join(isCLI ? __dirname : 'node_modules/@dojo/cli-build-webpack', 'loaders'),
-				path.join(__dirname, 'node_modules'),
-				'node_modules' ]
-		},
-		module: {
-			rules: [
-				...includeWhen(tslintExists, () => {
-					return [
-						{
-							test: /\.ts$/,
-							enforce: 'pre',
-							loader: 'tslint-loader',
-							options: {
-								tsConfigFile: path.join(basePath, 'tslint.json')
-							}
-						}
-					];
-				}),
-				{ test: /@dojo\/.*\.js$/, enforce: 'pre', loader: 'source-map-loader-cli', options: { includeModulePaths: true } },
-				{ test: /src[\\\/].*\.ts?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=ts&instanceName=0_dojo' },
-				{ test: /src[\\\/].*\.m\.css?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=css' },
-				{ test: /src[\\\/].*\.ts(x)?$/, use: [
-					'umd-compat-loader',
-					{
-						loader: 'ts-loader',
-						options: {
-							instance: 'dojo'
-						}
-					}
-				]},
-				{ test: /\.js?$/, loader: 'umd-compat-loader' },
-				{ test: new RegExp(`globalize(\\${path.sep}|$)`), loader: 'imports-loader?define=>false' },
-				...includeWhen(!args.element, () => {
-					return [
-						{ test: /\.html$/, loader: 'html-loader' }
-					];
-				}),
-				{ test: /.*\.(gif|png|jpe?g|svg|eot|ttf|woff|woff2)$/i, loader: 'file-loader?hash=sha512&digest=hex&name=[hash:base64:8].[ext]' },
-				{ test: /\.css$/, exclude: /src[\\\/].*/, loader: cssLoader },
-				{ test: /src[\\\/].*\.css?$/, loader: cssModuleLoader },
-				{ test: /\.m\.css.js$/, exclude: /src[\\\/].*/, use: ['json-css-module-loader'] },
-				...includeWhen(args.withTests, () => {
-					return [
-						{ test: /tests[\\\/].*\.ts?$/, use: [
-							'umd-compat-loader',
+			resolveLoader: {
+				modules: [
+					path.join(isCLI ? __dirname : 'node_modules/@dojo/cli-build-webpack', 'loaders'),
+					path.join(__dirname, 'node_modules'),
+					'node_modules' ]
+			},
+			module: {
+				rules: [
+					...includeWhen(tslintExists, () => {
+						return [
 							{
-								loader: 'ts-loader',
+								test: /\.ts$/,
+								enforce: 'pre',
+								loader: 'tslint-loader',
 								options: {
-									instance: 'dojo'
+									tsConfigFile: path.join(basePath, 'tslint.json')
 								}
 							}
-						] }
-					];
-				}),
-				...includeWhen(args.element, args => {
-					return [
-						{ test: /custom-element\.js/, loader: `imports-loader?widgetFactory=${args.element}` }
-					];
-				}),
-				...includeWhen(args.bundles && Object.keys(args.bundles).length, () => {
-					const loaders: any[] = [];
-
-					Object.keys(args.bundles).forEach(bundleName => {
-						(args.bundles || {})[ bundleName ].forEach(fileName => {
-							loaders.push({
-								test: /main\.ts/,
-								loader: {
-									loader: 'imports-loader',
+						];
+					}),
+					{ test: /@dojo\/.*\.js$/, enforce: 'pre', loader: 'source-map-loader-cli', options: { includeModulePaths: true } },
+					{ test: /src[\\\/].*\.ts?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=ts&instanceName=0_dojo' },
+					{ test: /src[\\\/].*\.m\.css?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=css' },
+					{ test: /src[\\\/].*\.ts(x)?$/, use: [
+						'umd-compat-loader',
+						{
+							loader: 'ts-loader',
+							options: {
+								instance: 'dojo'
+							}
+						}
+					]},
+					{ test: /\.js?$/, loader: 'umd-compat-loader' },
+					{ test: new RegExp(`globalize(\\${path.sep}|$)`), loader: 'imports-loader?define=>false' },
+					...includeWhen(!args.element, () => {
+						return [
+							{ test: /\.html$/, loader: 'html-loader' }
+						];
+					}),
+					{ test: /.*\.(gif|png|jpe?g|svg|eot|ttf|woff|woff2)$/i, loader: 'file-loader?hash=sha512&digest=hex&name=[hash:base64:8].[ext]' },
+					{ test: /\.css$/, exclude: /src[\\\/].*/, loader: cssLoader },
+					{ test: /src[\\\/].*\.css?$/, loader: cssModuleLoader },
+					{ test: /\.m\.css.js$/, exclude: /src[\\\/].*/, use: ['json-css-module-loader'] },
+					...includeWhen(args.withTests, () => {
+						return [
+							{ test: /tests[\\\/].*\.ts?$/, use: [
+								'umd-compat-loader',
+								{
+									loader: 'ts-loader',
 									options: {
-										'__manual_bundle__': `bundle-loader?lazy&name=${bundleName}!${fileName}`
+										instance: 'dojo'
 									}
 								}
+							] },
+							{
+								test: /src\/.*\.ts$/,
+								use: {
+									loader: 'istanbul-loader'
+								},
+								enforce: 'post'
+							}
+						];
+					}),
+					...includeWhen(args.element, args => {
+						return [
+							{ test: /custom-element\.js/, loader: `imports-loader?widgetFactory=${args.element}` }
+						];
+					}),
+					...includeWhen(args.bundles && Object.keys(args.bundles).length, () => {
+						const loaders: any[] = [];
+
+						Object.keys(args.bundles).forEach(bundleName => {
+							(args.bundles || {})[ bundleName ].forEach(fileName => {
+								loaders.push({
+									test: /main\.ts/,
+									loader: {
+										loader: 'imports-loader',
+										options: {
+											'__manual_bundle__': `bundle-loader?lazy&name=${bundleName}!${fileName}`
+										}
+									}
+								});
 							});
 						});
-					});
 
-					return loaders;
-				})
-			]
-		}
-	};
+						return loaders;
+					})
+				]
+			}
+		};
+	}
+
+	const config: webpack.Config[] = [buildConfig()];
+
+	if (args.withTests) {
+		// make another version of the test bundle, but with a node target instead, for the unit tests.
+		const nodeTestConfig = buildConfig({
+			target: 'node'
+		});
+		config.push(nodeTestConfig);
+	}
 
 	if (args.debug) {
-		config.profile = true;
+		config.forEach((c) => c.profile = true);
 	}
 
 	return config;
