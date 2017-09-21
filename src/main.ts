@@ -3,7 +3,6 @@ import { underline } from 'chalk';
 import * as fs from 'fs';
 import * as net from 'net';
 import * as path from 'path';
-import { ExternalDep } from './plugins/ExternalLoaderPlugin';
 import webpack = require('webpack');
 
 const WebpackDevServer: any = require('webpack-dev-server');
@@ -34,7 +33,6 @@ export interface BuildArgs {
 	debug: boolean;
 	disableLazyWidgetDetection: boolean;
 	bundles: Bundles;
-	externals: { outputPath?: string; dependencies: ExternalDep[] };
 	features: string | string[];
 	force: boolean;
 }
