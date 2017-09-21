@@ -1,10 +1,8 @@
 import webpack = require('webpack');
 import NormalModuleReplacementPlugin = require('webpack/lib/NormalModuleReplacementPlugin');
 import Set from '@dojo/shim/Set';
-import StaticOptmizePlugin from '@dojo/static-optimize-plugin/StaticOptimizePlugin';
 import { existsSync, readFileSync } from 'fs';
 import * as path from 'path';
-import GetFeaturesType from './getFeatures';
 import { BuildArgs } from './main';
 
 const IgnorePlugin = require('webpack/lib/IgnorePlugin');
@@ -16,31 +14,19 @@ const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer-sunburst').BundleAnalyzerPlugin;
 
 const packagePath = '.';
-const getFeatures: typeof GetFeaturesType = require(`${packagePath}/getFeatures`).default;
 const basePath = process.cwd();
-
 const packageJsonPath = path.join(basePath, 'package.json');
 const packageJson = existsSync(packageJsonPath) ? require(packageJsonPath) : {};
 const packageName = packageJson.name || '';
-
 const tsLintPath = path.join(basePath, 'tslint.json');
 const tsLint = existsSync(tsLintPath) ? require(tsLintPath) : {};
 
-function getJsonpFunction(name?: string) {
-	let jsonpFunction = 'dojoWebpackJsonp';
-	if (name) {
-		jsonpFunction += '_' + name.replace(/[^a-z0-9_]/g, ' ').trim().replace(/\s+/g, '_');
-	}
-	return jsonpFunction;
+function getJsonpFunction(name: string) {
+	name =  name.replace(/[^a-z0-9_]/g, ' ').trim().replace(/\s+/g, '_');
+	return `dojoWebpackJsonp${name}`;
 }
 
-interface UMDCompatOptions {
-	bundles?: {
-		[key: string]: string[];
-	};
-}
-
-function getUMDCompatLoader(options: UMDCompatOptions) {
+function getUMDCompatLoader(options: { bundles?: { [key: string ]: string[] } }) {
 	const { bundles = {} } = options;
 	return {
 		loader: 'umd-compat-loader',
@@ -63,8 +49,6 @@ function getUMDCompatLoader(options: UMDCompatOptions) {
 
 function webpackConfig(args: Partial<BuildArgs>) {
 	args = args || {};
-
-	const hasFlags = getFeatures(args);
 
 	const cssLoader = ExtractTextPlugin.extract({ use: 'css-loader?sourceMap' });
 	const localIdentName = '[hash:base64:8]';
@@ -93,18 +77,8 @@ function webpackConfig(args: Partial<BuildArgs>) {
 	const replacedModules = new Set<string>();
 
 	const config: webpack.Config = {
-		entry: {
-			'src/main': [
-				path.join(basePath, 'src/main.css'),
-				path.join(basePath, 'src/main.ts')
-			]
-		},
-		node: {
-			dgram: 'empty',
-			net: 'empty',
-			tls: 'empty',
-			fs: 'empty'
-		},
+		entry: { 'src/main': [ path.join(basePath, 'src/main.css'), path.join(basePath, 'src/main.ts') ] },
+		node: { dgram: 'empty', net: 'empty', tls: 'empty', fs: 'empty' },
 		plugins: [
 			new AutoRequireWebpackPlugin(/src\/main/),
 			new webpack.BannerPlugin(readFileSync(require.resolve(`${packagePath}/banner.md`), 'utf8')),
@@ -112,7 +86,6 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			new NormalModuleReplacementPlugin(/\.m.css$/, result => {
 				const requestFileName = path.resolve(result.context, result.request);
 				const jsFileName = requestFileName + '.js';
-
 				if (replacedModules.has(requestFileName)) {
 					replacedModules.delete(requestFileName);
 				} else if (existsSync(jsFileName)) {
@@ -121,28 +94,11 @@ function webpackConfig(args: Partial<BuildArgs>) {
 				}
 			}),
 			new ExtractTextPlugin({ filename: 'main.css', allChunks: true }),
-			new OptimizeCssAssetsPlugin({
-				cssProcessorOptions: {
-					map: { inline: false }
-				}
-			}),
+			new OptimizeCssAssetsPlugin({ cssProcessorOptions: { map: { inline: false } } }),
 			new CopyWebpackPlugin([ { context: 'src', from: '**/*', ignore: '*.ts' } ]),
-			new StaticOptmizePlugin(hasFlags),
-			new webpack.optimize.UglifyJsPlugin({
-				sourceMap: true,
-				compress: { warnings: false },
-				exclude: /tests[/]/
-			}),
-			new HtmlWebpackPlugin({
-				inject: true,
-				chunks: [ 'src/main' ],
-				template: 'src/index.html'
-			}),
-			new BundleAnalyzerPlugin({
-				analyzerMode: 'static',
-				openAnalyzer: false,
-				reportType: 'sunburst'
-			})
+			new webpack.optimize.UglifyJsPlugin({ sourceMap: true, compress: { warnings: false }, exclude: /tests[/]/ }),
+			new HtmlWebpackPlugin({ inject: true, chunks: [ 'src/main' ], template: 'src/index.html' }),
+			new BundleAnalyzerPlugin({ analyzerMode: 'static', openAnalyzer: false, reportType: 'sunburst' })
 		],
 		output: {
 			chunkFilename: '[name].js',
@@ -154,43 +110,17 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			path: path.resolve('./dist')
 		},
 		devtool: 'source-map',
-		resolve: {
-			modules: [
-				basePath,
-				path.join(basePath, 'node_modules')
-			],
-			extensions: ['.ts', '.tsx', '.js']
-		},
-		resolveLoader: {
-			modules: [
-				path.join(__dirname, 'loaders'),
-				path.join(__dirname, 'node_modules'),
-				'node_modules'
-			]
-		},
+		resolve: { extensions: ['.ts', '.tsx', '.js'] },
+		resolveLoader: { modules: [ path.join(__dirname, 'loaders'), path.join(__dirname, 'node_modules'), 'node_modules' ] },
 		module: {
 			rules: [
-				{
-					test: /\.ts$/,
-					enforce: 'pre',
-					loader: 'tslint-loader',
-					options: {
-						configuration: tsLint,
-						emitErrors: true,
-						failOnHint: true
-					}
-				},
+				{ test: /\.ts$/, enforce: 'pre', loader: 'tslint-loader', options: { configuration: tsLint, emitErrors: true, failOnHint: true } },
 				{ test: /@dojo\/.*\.js$/, enforce: 'pre', loader: 'source-map-loader-cli', options: { includeModulePaths: true } },
 				{ test: /src[\\\/].*\.ts?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=ts&instanceName=0_dojo' },
 				{ test: /src[\\\/].*\.m\.css?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=css' },
 				{ test: /src[\\\/].*\.ts(x)?$/, use: [
 					getUMDCompatLoader({ bundles: args.bundles }),
-					{
-						loader: 'ts-loader',
-						options: {
-							instance: 'dojo'
-						}
-					}
+					{ loader: 'ts-loader', options: { instance: 'dojo' } }
 				]},
 				{ test: /\.js?$/, loader: 'umd-compat-loader' },
 				{ test: new RegExp(`globalize(\\${path.sep}|$)`), loader: 'imports-loader?define=>false' },
@@ -202,11 +132,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 		}
 	};
 
-	if (args.debug) {
-		config.profile = true;
-	}
-
 	return config;
 }
 
-module.exports = webpackConfig;
+export default webpackConfig;
