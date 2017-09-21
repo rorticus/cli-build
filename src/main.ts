@@ -1,11 +1,7 @@
-import { Command, EjectOutput, Helper, OptionsHelper } from '@dojo/interfaces/cli';
-import { underline } from 'chalk';
+import { Command, Helper, OptionsHelper } from '@dojo/interfaces/cli';
 import * as fs from 'fs';
-import * as path from 'path';
 import webpack = require('webpack');
 import config from './webpack.config';
-
-const pkgDir = require('pkg-dir');
 
 export interface Bundles {
 	[key: string]: string[];
@@ -70,22 +66,6 @@ function compile(config: webpack.Config, options: WebpackOptions, args: BuildArg
 	});
 }
 
-function buildNpmDependencies(): any {
-	try {
-		const packagePath = pkgDir.sync(__dirname);
-		const packageJsonFilePath = path.join(packagePath, 'package.json');
-		const packageJson = <any> require(packageJsonFilePath);
-
-		return {
-			[packageJson.name]: packageJson.version,
-			...packageJson.dependencies
-		};
-	}
-	catch (e) {
-		throw new Error('Failed reading dependencies from package.json - ' + e.message);
-	}
-}
-
 const command: Command<BuildArgs> = {
 	group: 'build',
 	name: 'webpack',
@@ -108,26 +88,6 @@ const command: Command<BuildArgs> = {
 		};
 		const configArgs = mergeConfigArgs(dojoRc as BuildArgs, args);
 		return compile(config(configArgs), options, args) as Promise<void>;
-	},
-	eject(helper: Helper) {
-		const ejectOutput: EjectOutput = {
-			npm: {
-				devDependencies: {
-					...buildNpmDependencies()
-				}
-			},
-			copy: {
-				path: __dirname,
-				files: [
-					'./webpack.config.js'
-				]
-			},
-			hints: [
-				'to build run ' + underline('./node_modules/.bin/webpack --config ./config/build-webpack/webpack.config.js')
-			]
-		};
-
-		return ejectOutput;
 	}
 };
 export default command;
