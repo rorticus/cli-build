@@ -1,7 +1,7 @@
 import { Command, Helper, OptionsHelper } from '@dojo/interfaces/cli';
 import * as fs from 'fs';
 import webpack = require('webpack');
-import config from './webpack.config';
+import prodConfig from './config/app/prod';
 
 export interface Bundles {
 	[key: string]: string[];
@@ -87,7 +87,7 @@ const command: Command<BuildArgs> = {
 			}
 		};
 		const configArgs = mergeConfigArgs(dojoRc as BuildArgs, args);
-		return compile(config(configArgs), options, args) as Promise<void>;
+		return compile(prodConfig(configArgs), options, args) as Promise<void>;
 	}
 };
 export default command;

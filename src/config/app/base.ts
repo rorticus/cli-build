@@ -3,17 +3,15 @@ import NormalModuleReplacementPlugin = require('webpack/lib/NormalModuleReplacem
 import Set from '@dojo/shim/Set';
 import { existsSync, readFileSync } from 'fs';
 import * as path from 'path';
-import { BuildArgs } from './main';
+import { BuildArgs } from '../../main';
 
 const IgnorePlugin = require('webpack/lib/IgnorePlugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const AutoRequireWebpackPlugin = require('auto-require-webpack-plugin');
-const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer-sunburst').BundleAnalyzerPlugin;
 
-const packagePath = '.';
+const packagePath = '../../';
 const basePath = process.cwd();
 const packageJsonPath = path.join(basePath, 'package.json');
 const packageJson = existsSync(packageJsonPath) ? require(packageJsonPath) : {};
@@ -94,11 +92,8 @@ function webpackConfig(args: Partial<BuildArgs>) {
 				}
 			}),
 			new ExtractTextPlugin({ filename: 'main.css', allChunks: true }),
-			new OptimizeCssAssetsPlugin({ cssProcessorOptions: { map: { inline: false } } }),
 			new CopyWebpackPlugin([ { context: 'src', from: '**/*', ignore: '*.ts' } ]),
-			new webpack.optimize.UglifyJsPlugin({ sourceMap: true, compress: { warnings: false }, exclude: /tests[/]/ }),
-			new HtmlWebpackPlugin({ inject: true, chunks: [ 'src/main' ], template: 'src/index.html' }),
-			new BundleAnalyzerPlugin({ analyzerMode: 'static', openAnalyzer: false, reportType: 'sunburst' })
+			new HtmlWebpackPlugin({ inject: true, chunks: [ 'src/main' ], template: 'src/index.html' })
 		],
 		output: {
 			chunkFilename: '[name].js',
@@ -111,7 +106,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 		},
 		devtool: 'source-map',
 		resolve: { extensions: ['.ts', '.tsx', '.js'] },
-		resolveLoader: { modules: [ path.join(__dirname, 'loaders'), path.join(__dirname, 'node_modules'), 'node_modules' ] },
+		resolveLoader: { modules: [ path.join(__dirname, '../../loaders'), path.join(__dirname, '../../node_modules'), 'node_modules' ] },
 		module: {
 			rules: [
 				{ test: /\.ts$/, enforce: 'pre', loader: 'tslint-loader', options: { configuration: tsLint, emitErrors: true, failOnHint: true } },
