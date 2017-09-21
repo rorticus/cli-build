@@ -1,7 +1,10 @@
 import { Command, Helper, OptionsHelper } from '@dojo/interfaces/cli';
-import * as fs from 'fs';
 import webpack = require('webpack');
+const WebpackDevServer: any = require('webpack-dev-server');
 import prodConfig from './config/app/prod';
+import devConfig from './config/app/dev';
+
+const fixMultipleWatchTrigger = require('webpack-mild-compile');
 
 export interface Bundles {
 	[key: string]: string[];
@@ -47,10 +50,6 @@ function compile(config: webpack.Config, options: WebpackOptions, args: BuildArg
 			}
 
 			if (stats) {
-				if (config.profile) {
-					fs.writeFileSync('dist/profile.json', JSON.stringify(stats.toJson()));
-				}
-
 				console.log(stats.toString(options.stats));
 
 				if (stats.compilation && stats.compilation.errors && stats.compilation.errors.length > 0 && !args.force) {
@@ -66,13 +65,29 @@ function compile(config: webpack.Config, options: WebpackOptions, args: BuildArg
 	});
 }
 
+function watch(config: webpack.Config, options: WebpackOptions, args: BuildArgs): Promise<void> {
+	const compiler = webpack(config);
+	fixMultipleWatchTrigger(compiler);
+	const server = new WebpackDevServer(compiler, options);
+	const serverPort = (config as any).devServer.port;
+	return new Promise<void>((resolve, reject) => {
+		server.listen(serverPort, '127.0.0.1', (err: Error) => {
+			console.log(`Starting server on http://localhost:${serverPort}`);
+			if (err) {
+				reject(err);
+				return;
+			}
+		});
+	});
+}
+
 const command: Command<BuildArgs> = {
 	group: 'build',
 	name: 'webpack',
 	description: 'create a build of your application',
 	register(options: OptionsHelper): void {
-		options('force', {
-			describe: 'Ignore build errors and use a successful return code',
+		options('dev', {
+			describe: 'watch',
 			default: false,
 			type: 'boolean'
 		});
@@ -87,7 +102,10 @@ const command: Command<BuildArgs> = {
 			}
 		};
 		const configArgs = mergeConfigArgs(dojoRc as BuildArgs, args);
-		return compile(prodConfig(configArgs), options, args) as Promise<void>;
+		if (args.dev) {
+			return watch(devConfig(configArgs), options, args);
+		}
+		return compile(prodConfig(configArgs), options, args);
 	}
 };
 export default command;
