@@ -3,6 +3,7 @@ import webpack = require('webpack');
 const WebpackDevServer: any = require('webpack-dev-server');
 import prodConfig from './config/app/prod';
 import devConfig from './config/app/dev';
+import testConfig from './config/app/test';
 
 const fixMultipleWatchTrigger = require('webpack-mild-compile');
 
@@ -91,6 +92,11 @@ const command: Command<BuildArgs> = {
 			default: false,
 			type: 'boolean'
 		});
+		options('test', {
+			describe: 'test',
+			default: false,
+			type: 'boolean'
+		});
 	},
 	run(helper: Helper, args: BuildArgs): Promise<void> {
 		const dojoRc = helper.configuration.get() || Object.create(null);
@@ -102,10 +108,18 @@ const command: Command<BuildArgs> = {
 			}
 		};
 		const configArgs = mergeConfigArgs(dojoRc as BuildArgs, args);
+		configArgs.basePath = process.cwd();
+		let config;
 		if (args.dev) {
 			return watch(devConfig(configArgs), options, args);
 		}
-		return compile(prodConfig(configArgs), options, args);
+		else if (args.test) {
+			config = testConfig;
+		}
+		else {
+			config = prodConfig;
+		}
+		return compile(config(configArgs), options, args);
 	}
 };
 export default command;

@@ -16,6 +16,7 @@ const basePath = process.cwd();
 const packageJsonPath = path.join(basePath, 'package.json');
 const packageJson = existsSync(packageJsonPath) ? require(packageJsonPath) : {};
 const packageName = packageJson.name || '';
+const packageVersion = packageJson.version || '1.0.0';
 const tsLintPath = path.join(basePath, 'tslint.json');
 const tsLint = existsSync(tsLintPath) ? require(tsLintPath) : {};
 
@@ -48,29 +49,28 @@ function getUMDCompatLoader(options: { bundles?: { [key: string ]: string[] } })
 function webpackConfig(args: Partial<BuildArgs>) {
 	args = args || {};
 
-	const cssLoader = ExtractTextPlugin.extract({ use: 'css-loader?sourceMap' });
+	const cssLoader = [ 'style-loader', 'css-loader?sourceMap' ];
 	const localIdentName = '[hash:base64:8]';
-	const cssModuleLoader = ExtractTextPlugin.extract({
-		use: [
-			'css-module-decorator-loader',
-			`css-loader?modules&sourceMap&importLoaders=1&localIdentName=${localIdentName}`,
-			{
-				loader: 'postcss-loader?sourceMap',
-				options: {
-					plugins: [
-						require('postcss-import')(),
-						require('postcss-cssnext')({
-							features: {
-								autoprefixer: {
-									browsers: [ 'last 2 versions', 'ie >= 10' ]
-								}
+	const cssModuleLoader = [
+		'style-loader',
+		'css-module-decorator-loader',
+		`css-loader?modules&sourceMap&importLoaders=1&localIdentName=${localIdentName}`,
+		{
+			loader: 'postcss-loader?sourceMap',
+			options: {
+				plugins: [
+					require('postcss-import')(),
+					require('postcss-cssnext')({
+						features: {
+							autoprefixer: {
+								browsers: [ 'last 2 versions', 'ie >= 10' ]
 							}
-						})
-					]
-				}
+						}
+					})
+				]
 			}
-		]
-	});
+		}
+	];
 
 	const replacedModules = new Set<string>();
 
@@ -90,10 +90,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 					replacedModules.add(requestFileName);
 					result.request = result.request.replace(/\.m\.css$/, '.m.css.js');
 				}
-			}),
-			new ExtractTextPlugin({ filename: 'main.css', allChunks: true }),
-			new CopyWebpackPlugin([ { context: 'src', from: '**/*', ignore: '*.ts' } ]),
-			new HtmlWebpackPlugin({ inject: true, chunks: [ 'src/main' ], template: 'src/index.html' })
+			})
 		],
 		output: {
 			chunkFilename: '[name].js',
@@ -102,7 +99,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			filename: '[name].js',
 			jsonpFunction: getJsonpFunction(packageName),
 			libraryTarget: 'umd',
-			path: path.resolve('./dist')
+			path: path.resolve('./output')
 		},
 		devtool: 'source-map',
 		resolve: { extensions: ['.ts', '.tsx', '.js'] },
@@ -120,8 +117,8 @@ function webpackConfig(args: Partial<BuildArgs>) {
 				{ test: /\.js?$/, loader: 'umd-compat-loader' },
 				{ test: new RegExp(`globalize(\\${path.sep}|$)`), loader: 'imports-loader?define=>false' },
 				{ test: /.*\.(gif|png|jpe?g|svg|eot|ttf|woff|woff2)$/i, loader: 'file-loader?hash=sha512&digest=hex&name=[hash:base64:8].[ext]' },
-				{ test: /\.css$/, exclude: /src[\\\/].*/, loader: cssLoader },
-				{ test: /src[\\\/].*\.css?$/, loader: cssModuleLoader },
+				{ test: /\.css$/, exclude: /src[\\\/].*/, use: cssLoader },
+				{ test: /src[\\\/].*\.css?$/, use: cssModuleLoader },
 				{ test: /\.m\.css.js$/, exclude: /src[\\\/].*/, use: ['json-css-module-loader'] }
 			]
 		}
