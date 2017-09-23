@@ -43,25 +43,10 @@ function mergeConfigArgs(...sources: BuildArgs[]): BuildArgs {
 
 function compile(config: webpack.Config, options: WebpackOptions, args: BuildArgs): Promise<void> {
 	const compiler = webpack(config);
+	fixMultipleWatchTrigger(compiler);
 	return new Promise<void>((resolve, reject) => {
-		compiler.run((err, stats) => {
-			if (err) {
-				reject(err);
-				return;
-			}
-
-			if (stats) {
-				console.log(stats.toString(options.stats));
-
-				if (stats.compilation && stats.compilation.errors && stats.compilation.errors.length > 0 && !args.force) {
-					reject({
-						exitCode: 1,
-						message: 'The build failed with errors. Use the --force to overcome this obstacle.'
-					});
-					return;
-				}
-			}
-			resolve();
+		const watching = compiler.watch(config.watchOptions, (err: any, stats: any) => {
+			console.log(stats.toString(options.stats));
 		});
 	});
 }
