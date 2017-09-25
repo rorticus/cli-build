@@ -13,14 +13,16 @@ const AutoRequireWebpackPlugin = require('auto-require-webpack-plugin');
 
 const packagePath = '../../';
 const basePath = process.cwd();
+const srcPath = path.join(basePath, 'src');
+const mainEntry = 'src/main';
 const packageJsonPath = path.join(basePath, 'package.json');
 const packageJson = existsSync(packageJsonPath) ? require(packageJsonPath) : {};
 const packageName = packageJson.name || '';
 const packageVersion = packageJson.version || '1.0.0';
 const tsLintPath = path.join(basePath, 'tslint.json');
-const tsLint = existsSync(tsLintPath) ? require(tsLintPath) : {};
+const tsLint = existsSync(tsLintPath) ? require(tsLintPath) : false;
 
-function getJsonpFunction(name: string) {
+function getJsonpFunctionName(name: string) {
 	name =  name.replace(/[^a-z0-9_]/g, ' ').trim().replace(/\s+/g, '_');
 	return `dojoWebpackJsonp${name}`;
 }
@@ -46,12 +48,23 @@ function getUMDCompatLoader(options: { bundles?: { [key: string ]: string[] } })
 	};
 }
 
-function webpackConfig(args: Partial<BuildArgs>) {
-	args = args || {};
+function getCSSReplacerPlugin() {
+	const replacedModules = new Set<string>();
+	return new NormalModuleReplacementPlugin(/\.m.css$/, result => {
+		const requestFileName = path.resolve(result.context, result.request);
+		const jsFileName = requestFileName + '.js';
+		if (replacedModules.has(requestFileName)) {
+			replacedModules.delete(requestFileName);
+		} else if (existsSync(jsFileName)) {
+			replacedModules.add(requestFileName);
+			result.request = result.request.replace(/\.m\.css$/, '.m.css.js');
+		}
+	});
+}
 
-	const cssLoader = [ 'style-loader', 'css-loader?sourceMap' ];
+function getCSSModuleLoader() {
 	const localIdentName = '[hash:base64:8]';
-	const cssModuleLoader = [
+	return [
 		'style-loader',
 		'css-module-decorator-loader',
 		`css-loader?modules&sourceMap&importLoaders=1&localIdentName=${localIdentName}`,
@@ -71,59 +84,48 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			}
 		}
 	];
+}
 
-	const replacedModules = new Set<string>();
+function webpackConfig(args: Partial<BuildArgs>) {
+	args = args || {};
 
 	const config: webpack.Config = {
-		entry: { 'src/main': [ path.join(basePath, 'src/main.css'), path.join(basePath, 'src/main.ts') ] },
+		entry: { [ mainEntry ]: [ path.join(srcPath, 'main.css'), path.join(srcPath, 'main.ts') ] },
 		node: { dgram: 'empty', net: 'empty', tls: 'empty', fs: 'empty' },
 		plugins: [
-			new AutoRequireWebpackPlugin(/src\/main/),
+			new AutoRequireWebpackPlugin(mainEntry),
 			new webpack.BannerPlugin(readFileSync(require.resolve(`${packagePath}/banner.md`), 'utf8')),
 			new IgnorePlugin(/request\/providers\/node/),
-			new NormalModuleReplacementPlugin(/\.m.css$/, result => {
-				const requestFileName = path.resolve(result.context, result.request);
-				const jsFileName = requestFileName + '.js';
-				if (replacedModules.has(requestFileName)) {
-					replacedModules.delete(requestFileName);
-				} else if (existsSync(jsFileName)) {
-					replacedModules.add(requestFileName);
-					result.request = result.request.replace(/\.m\.css$/, '.m.css.js');
-				}
-			})
+			getCSSReplacerPlugin(),
+			new CopyWebpackPlugin([ { context: srcPath, from: '**/*', ignore: '*.ts' } ]),
+			new HtmlWebpackPlugin({ inject: true, chunks: [ mainEntry ], template: path.join(srcPath, 'index.html') })
 		],
 		output: {
 			chunkFilename: '[name].js',
 			library: '[name]',
 			umdNamedDefine: true,
 			filename: '[name].js',
-			jsonpFunction: getJsonpFunction(packageName),
+			jsonpFunction: getJsonpFunctionName(packageName),
 			libraryTarget: 'umd',
 			path: path.resolve('./output')
 		},
 		devtool: 'source-map',
-		watch: true,
-		watchOptions: {
-			ignored: /node_modules/
-		},
+		watchOptions: { ignored: /node_modules/ },
 		resolve: { extensions: ['.ts', '.tsx', '.js'] },
 		resolveLoader: { modules: [ path.join(__dirname, '../../loaders'), path.join(__dirname, '../../node_modules'), 'node_modules' ] },
 		module: {
 			rules: [
 				{ test: /\.ts$/, enforce: 'pre', loader: 'tslint-loader', options: { configuration: tsLint, emitErrors: true, failOnHint: true } },
 				{ test: /@dojo\/.*\.js$/, enforce: 'pre', loader: 'source-map-loader-cli', options: { includeModulePaths: true } },
-				{ test: /src[\\\/].*\.ts?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=ts&instanceName=0_dojo' },
-				{ test: /src[\\\/].*\.m\.css?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=css' },
-				{ test: /src[\\\/].*\.ts(x)?$/, use: [
-					getUMDCompatLoader({ bundles: args.bundles }),
-					{ loader: 'ts-loader', options: { instance: 'dojo' } }
-				]},
+				{ include: srcPath, test: /.*\.ts?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=ts&instanceName=0_dojo' },
+				{ include: srcPath, test: /.*\.m\.css?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=css' },
+				{ include: srcPath, test: /.*\.ts(x)?$/, use: [ getUMDCompatLoader({ bundles: args.bundles }), { loader: 'ts-loader', options: { instance: 'dojo' } } ]},
+				{ include: srcPath, test: /.*\.css?$/, use: getCSSModuleLoader() },
 				{ test: /\.js?$/, loader: 'umd-compat-loader' },
 				{ test: new RegExp(`globalize(\\${path.sep}|$)`), loader: 'imports-loader?define=>false' },
 				{ test: /.*\.(gif|png|jpe?g|svg|eot|ttf|woff|woff2)$/i, loader: 'file-loader?hash=sha512&digest=hex&name=[hash:base64:8].[ext]' },
-				{ test: /\.css$/, exclude: /src[\\\/].*/, use: cssLoader },
-				{ test: /src[\\\/].*\.css?$/, use: cssModuleLoader },
-				{ test: /\.m\.css.js$/, exclude: /src[\\\/].*/, use: ['json-css-module-loader'] }
+				{ test: /\.css$/, exclude: srcPath, use: [ 'style-loader', 'css-loader?sourceMap' ] },
+				{ test: /\.m\.css.js$/, exclude: srcPath, use: ['json-css-module-loader'] }
 			]
 		}
 	};

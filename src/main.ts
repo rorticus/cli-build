@@ -22,11 +22,8 @@ interface ConfigFactory {
 }
 
 interface WebpackOptions {
-	compress: boolean;
-	stats: {
-		colors: boolean
-		chunks: boolean
-	};
+	compress?: boolean;
+	stats?: any;
 }
 
 function mergeConfigArgs(...sources: BuildArgs[]): BuildArgs {
@@ -44,9 +41,31 @@ function mergeConfigArgs(...sources: BuildArgs[]): BuildArgs {
 function compile(config: webpack.Config, options: WebpackOptions, args: BuildArgs): Promise<void> {
 	const compiler = webpack(config);
 	fixMultipleWatchTrigger(compiler);
+	if (args.watch) {
+		return new Promise<void>((resolve, reject) => {
+			const watching = compiler.watch(config.watchOptions, (err: any, stats: any) => {
+				console.log(stats.toString(options.stats));
+			});
+		});
+	}
 	return new Promise<void>((resolve, reject) => {
-		const watching = compiler.watch(config.watchOptions, (err: any, stats: any) => {
-			console.log(stats.toString(options.stats));
+		compiler.run((err, stats) => {
+			if (err) {
+				reject(err);
+				return;
+			}
+			if (stats) {
+				console.log(stats.toString(options.stats));
+
+				if (stats.compilation && stats.compilation.errors && stats.compilation.errors.length > 0 && !args.force) {
+					reject({
+						exitCode: 1,
+						message: 'The build failed with errors. Use the --force to overcome this obstacle.'
+					});
+					return;
+				}
+			}
+			resolve();
 		});
 	});
 }
@@ -73,6 +92,11 @@ const command: Command<BuildArgs> = {
 	description: 'create a build of your application',
 	register(options: OptionsHelper): void {
 		options('dev', {
+			describe: 'dev',
+			default: false,
+			type: 'boolean'
+		});
+		options('watch', {
 			describe: 'watch',
 			default: false,
 			type: 'boolean'
@@ -87,16 +111,13 @@ const command: Command<BuildArgs> = {
 		const dojoRc = helper.configuration.get() || Object.create(null);
 		const options: WebpackOptions = {
 			compress: true,
-			stats: {
-				colors: true,
-				chunks: false
-			}
+			stats: 'minimal'
 		};
 		const configArgs = mergeConfigArgs(dojoRc as BuildArgs, args);
 		configArgs.basePath = process.cwd();
 		let config;
 		if (args.dev) {
-			return watch(devConfig(configArgs), options, args);
+			return compile(devConfig(configArgs), options, args);
 		}
 		else if (args.test) {
 			config = testConfig;
