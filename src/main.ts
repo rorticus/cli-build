@@ -101,11 +101,6 @@ const command: Command<BuildArgs> = {
 			default: false,
 			type: 'boolean'
 		});
-		options('test', {
-			describe: 'test',
-			default: false,
-			type: 'boolean'
-		});
 	},
 	run(helper: Helper, args: BuildArgs): Promise<void> {
 		const dojoRc = helper.configuration.get() || Object.create(null);

@@ -10,6 +10,8 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const AutoRequireWebpackPlugin = require('auto-require-webpack-plugin');
+const OfflinePlugin = require('offline-plugin');
+const WebpackPwaManifest = require('webpack-pwa-manifest');
 
 const packagePath = '../../';
 const basePath = process.cwd();
@@ -21,6 +23,13 @@ const packageName = packageJson.name || '';
 const packageVersion = packageJson.version || '1.0.0';
 const tsLintPath = path.join(basePath, 'tslint.json');
 const tsLint = existsSync(tsLintPath) ? require(tsLintPath) : false;
+
+const banner = `
+[Dojo](https://dojo.io/)
+Copyright [JS Foundation](https://js.foundation/) & contributors
+[New BSD license](https://github.com/dojo/meta/blob/master/LICENSE)
+All rights reserved
+`;
 
 function getJsonpFunctionName(name: string) {
 	name =  name.replace(/[^a-z0-9_]/g, ' ').trim().replace(/\s+/g, '_');
@@ -86,20 +95,26 @@ function getCSSModuleLoader() {
 	];
 }
 
+const removeEmpty = (items: any[]) => items.filter((item) => item);
+
 function webpackConfig(args: Partial<BuildArgs>) {
 	args = args || {};
+	const serviceWorker = args.pwa && args.pwa.serviceWorker && { ...args.pwa.serviceWorker, AppCache: false };
+	const manifest = args.pwa && args.pwa.manifest;
 
 	const config: webpack.Config = {
-		entry: { [ mainEntry ]: [ path.join(srcPath, 'main.css'), path.join(srcPath, 'main.ts') ] },
+		entry: { [ mainEntry ]: [ path.join(srcPath, 'main.css'), path.join(srcPath, 'main.ts'), path.join(__dirname, 'sw.js') ] },
 		node: { dgram: 'empty', net: 'empty', tls: 'empty', fs: 'empty' },
-		plugins: [
+		plugins: removeEmpty([
 			new AutoRequireWebpackPlugin(mainEntry),
-			new webpack.BannerPlugin(readFileSync(require.resolve(`${packagePath}/banner.md`), 'utf8')),
+			new webpack.BannerPlugin(banner),
 			new IgnorePlugin(/request\/providers\/node/),
 			getCSSReplacerPlugin(),
 			new CopyWebpackPlugin([ { context: srcPath, from: '**/*', ignore: '*.ts' } ]),
-			new HtmlWebpackPlugin({ inject: true, chunks: [ mainEntry ], template: path.join(srcPath, 'index.html') })
-		],
+			new HtmlWebpackPlugin({ inject: true, chunks: [ mainEntry ], template: path.join(srcPath, 'index.html') }),
+			serviceWorker && new OfflinePlugin(serviceWorker),
+			manifest && new WebpackPwaManifest(manifest)
+		]),
 		output: {
 			chunkFilename: '[name].js',
 			library: '[name]',
@@ -114,8 +129,8 @@ function webpackConfig(args: Partial<BuildArgs>) {
 		resolve: { extensions: ['.ts', '.tsx', '.js'] },
 		resolveLoader: { modules: [ path.join(__dirname, '../../loaders'), path.join(__dirname, '../../node_modules'), 'node_modules' ] },
 		module: {
-			rules: [
-				{ test: /\.ts$/, enforce: 'pre', loader: 'tslint-loader', options: { configuration: tsLint, emitErrors: true, failOnHint: true } },
+			rules: removeEmpty([
+				tsLint && { test: /\.ts$/, enforce: 'pre', loader: 'tslint-loader', options: { configuration: tsLint, emitErrors: true, failOnHint: true } },
 				{ test: /@dojo\/.*\.js$/, enforce: 'pre', loader: 'source-map-loader-cli', options: { includeModulePaths: true } },
 				{ include: srcPath, test: /.*\.ts?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=ts&instanceName=0_dojo' },
 				{ include: srcPath, test: /.*\.m\.css?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=css' },
@@ -126,7 +141,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 				{ test: /.*\.(gif|png|jpe?g|svg|eot|ttf|woff|woff2)$/i, loader: 'file-loader?hash=sha512&digest=hex&name=[hash:base64:8].[ext]' },
 				{ test: /\.css$/, exclude: srcPath, use: [ 'style-loader', 'css-loader?sourceMap' ] },
 				{ test: /\.m\.css.js$/, exclude: srcPath, use: ['json-css-module-loader'] }
-			]
+			])
 		}
 	};
 
