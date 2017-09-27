@@ -59,7 +59,7 @@ function compile(config: webpack.Config, options: WebpackOptions, args: BuildArg
 		spinner.start();
 		return new Promise<void>((resolve, reject) => {
 			compiler.watch(config.watchOptions, (err: any, stats: any) => {
-				logStats(stats);
+				logStats(stats, config);
 			});
 		});
 	}
@@ -72,7 +72,7 @@ function compile(config: webpack.Config, options: WebpackOptions, args: BuildArg
 			}
 			if (stats) {
 				spinner.stop();
-				logStats(stats);
+				logStats(stats, config);
 
 				if (stats.compilation && stats.compilation.errors && stats.compilation.errors.length > 0 && !args.force) {
 					reject({
@@ -87,7 +87,7 @@ function compile(config: webpack.Config, options: WebpackOptions, args: BuildArg
 	});
 }
 
-function logStats(stats: any, serve = false) {
+function logStats(stats: any, config: any, serve = false) {
 	const assets = Object.keys(stats.compilation.assets).map((name) => {
 		const size = (stats.compilation.assets[name].size() / 1000).toFixed(2);
 		return `${name} ${chalk.yellow(`(${size}kb)`)}`;
@@ -100,7 +100,7 @@ ${logSymbols.warning} warnings: ${stats.compilation.warnings.length}
 ${chalk.yellow('assets:')}
 ${columns(assets)}
 
-${serve ? chalk.bgYellow(chalk.black(`served at: ${chalk.underline('http://localhost:8888')}`)) : ''}
+${chalk.bgYellow(chalk.black(serve ? `served at: ${chalk.underline('http://localhost:8888')}` : `output at: ${chalk.underline(config.output.path)}`))}
 	`);
 }
 
@@ -110,7 +110,7 @@ function watch(config: webpack.Config, options: WebpackOptions, args: BuildArgs)
 	const spinner = ora('building');
 	compiler.plugin('done', (stats) => {
 		spinner.stop();
-		logStats(stats, true);
+		logStats(stats, config, true);
 	});
 	compiler.plugin('invalid', () => {
 		logUpdate('');
