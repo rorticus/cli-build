@@ -1,11 +1,16 @@
 import { Command, Helper, OptionsHelper } from '@dojo/interfaces/cli';
 import webpack = require('webpack');
-const WebpackDevServer: any = require('webpack-dev-server');
 import prodConfig from './config/app/prod';
 import devConfig from './config/app/dev';
-import testConfig from './config/app/test';
 
 const fixMultipleWatchTrigger = require('webpack-mild-compile');
+const express = require('express');
+const webpackMiddleware = require('webpack-dev-middleware');
+const columns = require('cli-columns');
+const logUpdate = require('log-update');
+const ora = require('ora');
+const logSymbols = require('log-symbols');
+const chalk = require('chalk');
 
 export interface Bundles {
 	[key: string]: string[];
@@ -41,21 +46,33 @@ function mergeConfigArgs(...sources: BuildArgs[]): BuildArgs {
 function compile(config: webpack.Config, options: WebpackOptions, args: BuildArgs): Promise<void> {
 	const compiler = webpack(config);
 	fixMultipleWatchTrigger(compiler);
+	logUpdate('');
 	if (args.watch) {
+		const spinner = ora('building');
+		compiler.plugin('invalid', () => {
+			logUpdate('');
+			spinner.start();
+		});
+		compiler.plugin('done', (stats) => {
+			spinner.stop();
+		});
+		spinner.start();
 		return new Promise<void>((resolve, reject) => {
-			const watching = compiler.watch(config.watchOptions, (err: any, stats: any) => {
-				console.log(stats.toString(options.stats));
+			compiler.watch(config.watchOptions, (err: any, stats: any) => {
+				logStats(stats);
 			});
 		});
 	}
 	return new Promise<void>((resolve, reject) => {
+		const spinner = ora('building').start();
 		compiler.run((err, stats) => {
 			if (err) {
 				reject(err);
 				return;
 			}
 			if (stats) {
-				console.log(stats.toString(options.stats));
+				spinner.stop();
+				logStats(stats);
 
 				if (stats.compilation && stats.compilation.errors && stats.compilation.errors.length > 0 && !args.force) {
 					reject({
@@ -70,18 +87,45 @@ function compile(config: webpack.Config, options: WebpackOptions, args: BuildArg
 	});
 }
 
+function logStats(stats: any, serve = false) {
+	const assets = Object.keys(stats.compilation.assets).map((name) => {
+		const size = (stats.compilation.assets[name].size() / 1000).toFixed(2);
+		return `${name} ${chalk.yellow(`(${size}kb)`)}`;
+	});
+	logUpdate(`
+${logSymbols.success} hash: ${stats.hash}
+${logSymbols.error} errors: ${stats.compilation.errors.length}
+${logSymbols.warning} warnings: ${stats.compilation.warnings.length}
+
+${chalk.yellow('assets:')}
+${columns(assets)}
+
+${serve ? chalk.bgYellow(chalk.black(`served at: ${chalk.underline('http://localhost:8888')}`)) : ''}
+	`);
+}
+
 function watch(config: webpack.Config, options: WebpackOptions, args: BuildArgs): Promise<void> {
+	const app = express();
 	const compiler = webpack(config);
+	const spinner = ora('building');
+	compiler.plugin('done', (stats) => {
+		spinner.stop();
+		logStats(stats, true);
+	});
+	compiler.plugin('invalid', () => {
+		logUpdate('');
+		spinner.start();
+	});
 	fixMultipleWatchTrigger(compiler);
-	const server = new WebpackDevServer(compiler, options);
-	const serverPort = (config as any).devServer.port;
-	return new Promise<void>((resolve, reject) => {
-		server.listen(serverPort, '127.0.0.1', (err: Error) => {
-			console.log(`Starting server on http://localhost:${serverPort}`);
-			if (err) {
-				reject(err);
-				return;
-			}
+	app.use(webpackMiddleware(compiler, {
+		noInfo: true,
+		quiet: true,
+		serverSideRender: false
+	}));
+	return new Promise((resolve) => {
+		app.listen((config as any).devServer.port, '127.0.0.1', function(err: any) {
+			logUpdate('');
+			spinner.start();
 		});
 	});
 }
@@ -101,8 +145,14 @@ const command: Command<BuildArgs> = {
 			default: false,
 			type: 'boolean'
 		});
+		options('watch-serve', {
+			describe: 'watch-serve',
+			default: false,
+			type: 'boolean'
+		});
 	},
 	run(helper: Helper, args: BuildArgs): Promise<void> {
+		console.log = () => {};
 		const dojoRc = helper.configuration.get() || Object.create(null);
 		const options: WebpackOptions = {
 			compress: true,
@@ -112,15 +162,17 @@ const command: Command<BuildArgs> = {
 		configArgs.basePath = process.cwd();
 		let config;
 		if (args.dev) {
-			return compile(devConfig(configArgs), options, args);
-		}
-		else if (args.test) {
-			config = testConfig;
+			config = devConfig;
 		}
 		else {
 			config = prodConfig;
 		}
-		return compile(config(configArgs), options, args);
+		if (args['watch-serve']) {
+			return watch(config(configArgs), options, args);
+		}
+		else {
+			return compile(config(configArgs), options, args);
+		}
 	}
 };
 export default command;

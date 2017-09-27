@@ -1,26 +1,23 @@
 import webpack = require('webpack');
 import NormalModuleReplacementPlugin = require('webpack/lib/NormalModuleReplacementPlugin');
 import Set from '@dojo/shim/Set';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync } from 'fs';
 import * as path from 'path';
 import { BuildArgs } from '../../main';
 
 const IgnorePlugin = require('webpack/lib/IgnorePlugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const AutoRequireWebpackPlugin = require('auto-require-webpack-plugin');
 const OfflinePlugin = require('offline-plugin');
 const WebpackPwaManifest = require('webpack-pwa-manifest');
 
-const packagePath = '../../';
 const basePath = process.cwd();
 const srcPath = path.join(basePath, 'src');
 const mainEntry = 'src/main';
 const packageJsonPath = path.join(basePath, 'package.json');
 const packageJson = existsSync(packageJsonPath) ? require(packageJsonPath) : {};
 const packageName = packageJson.name || '';
-const packageVersion = packageJson.version || '1.0.0';
 const tsLintPath = path.join(basePath, 'tslint.json');
 const tsLint = existsSync(tsLintPath) ? require(tsLintPath) : false;
 
@@ -103,7 +100,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 	const manifest = args.pwa && args.pwa.manifest;
 
 	const config: webpack.Config = {
-		entry: { [ mainEntry ]: [ path.join(srcPath, 'main.css'), path.join(srcPath, 'main.ts'), path.join(__dirname, 'sw.js') ] },
+		entry: { [ mainEntry ]: removeEmpty([ path.join(srcPath, 'main.css'), path.join(srcPath, 'main.ts'), serviceWorker && path.join(__dirname, 'sw.js') ]) },
 		node: { dgram: 'empty', net: 'empty', tls: 'empty', fs: 'empty' },
 		plugins: removeEmpty([
 			new AutoRequireWebpackPlugin(mainEntry),
@@ -123,6 +120,9 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			jsonpFunction: getJsonpFunctionName(packageName),
 			libraryTarget: 'umd',
 			path: path.resolve('./output')
+		},
+		devServer: {
+			port: 8888
 		},
 		devtool: 'source-map',
 		watchOptions: { ignored: /node_modules/ },

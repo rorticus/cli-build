@@ -122,6 +122,9 @@ declare module 'webpack/lib/webpack' {
 				moduleExtensions?: string[];
 			};
 			devtool?: false | 'eval' | 'cheap-eval-source-map' | 'cheap-source-map' | 'cheap-module-eval-source-map' | 'cheap-module-source-map' | 'eval-source-map' | 'source-map' | 'nosources-source-map' | 'inline-source-map' | 'hidden-source-map';
+			devServer?: {
+				port?: number;
+			};
 			context?: string;
 			target?: 'async-node' | 'electron-main' | 'electron-renderer' | 'node' | 'node-webkit' | 'web' | 'webworker';
 			externals?: { [key: string]: string | string[] | Object } | ((context: string, request: string, callback: Function) => void)[];
