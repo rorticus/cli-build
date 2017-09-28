@@ -95,11 +95,21 @@ const removeEmpty = (items: any[]) => items.filter((item) => item);
 
 function webpackConfig(args: Partial<BuildArgs>) {
 	args = args || {};
-	const serviceWorker = args.pwa && args.pwa.serviceWorker && { ...{ ServiceWorker: { entry: path.join(__dirname, './sw-handler.js') } }, ...args.pwa.serviceWorker, AppCache: false };
+	const serviceWorker = args.pwa && args.pwa.serviceWorker && {
+		...{ ServiceWorker: { entry: path.join(__dirname, './sw-handler.js') } }
+		, ...args.pwa.serviceWorker,
+		AppCache: false
+	};
 	const manifest = args.pwa && args.pwa.manifest;
 
 	const config: webpack.Configuration = {
-		entry: { [ mainEntry ]: removeEmpty([ path.join(srcPath, 'main.css'), path.join(srcPath, 'main.ts'), serviceWorker && path.join(__dirname, 'sw.js') ]) },
+		entry: {
+			[ mainEntry ]: removeEmpty([
+				path.join(srcPath, 'main.css'),
+				path.join(srcPath, 'main.ts'),
+				serviceWorker && path.join(__dirname, 'sw.js')
+			])
+		},
 		node: { dgram: 'empty', net: 'empty', tls: 'empty', fs: 'empty' },
 		plugins: removeEmpty([
 			serviceWorker && new webpack.DefinePlugin({
