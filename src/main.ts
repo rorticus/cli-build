@@ -11,6 +11,8 @@ const logUpdate = require('log-update');
 const ora = require('ora');
 const logSymbols = require('log-symbols');
 const chalk = require('chalk');
+const typescript = require('typescript');
+const version = require('./package.json').version;
 
 export interface Bundles {
 	[key: string]: string[];
@@ -93,6 +95,8 @@ function logStats(stats: any, config: any, serve = false) {
 		return `${name} ${chalk.yellow(`(${size}kb)`)}`;
 	});
 	logUpdate(`
+${logSymbols.info} cli-build: ${version}
+${logSymbols.info} typescript: ${typescript.version}
 ${logSymbols.success} hash: ${stats.hash}
 ${logSymbols.error} errors: ${stats.compilation.errors.length}
 ${logSymbols.warning} warnings: ${stats.compilation.warnings.length}
@@ -100,7 +104,7 @@ ${logSymbols.warning} warnings: ${stats.compilation.warnings.length}
 ${chalk.yellow('assets:')}
 ${columns(assets)}
 
-${chalk.bgYellow(chalk.black(serve ? `served at: ${chalk.underline('http://localhost:8888')}` : `output at: ${chalk.underline(config.output.path)}`))}
+${chalk.yellow(serve ? `served at: ${chalk.cyan(chalk.underline('http://localhost:8888'))}` : `output at: ${chalk.cyan(chalk.underline(`file:///${config.output.path}`))}`)}
 	`);
 }
 
