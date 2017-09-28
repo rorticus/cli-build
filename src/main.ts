@@ -110,6 +110,10 @@ ${chalk.yellow(serve ? `served at: ${chalk.cyan(chalk.underline('http://localhos
 
 function watch(config: webpack.Configuration, options: WebpackOptions, args: BuildArgs): Promise<void> {
 	const app = express();
+	(config as any).plugins.push(new webpack.HotModuleReplacementPlugin());
+	Object.keys(config.entry).forEach((name) => {
+		(config as any).entry[name].push('webpack-hot-middleware/client?path=/__webpack_hmr&timeout=20000');
+	});
 	const compiler = webpack(config);
 	const spinner = ora('building');
 	compiler.plugin('done', (stats) => {
@@ -125,6 +129,9 @@ function watch(config: webpack.Configuration, options: WebpackOptions, args: Bui
 		noInfo: true,
 		quiet: true,
 		serverSideRender: false
+	}));
+	app.use(require('webpack-hot-middleware')(compiler, {
+		log: console.log, path: '/__webpack_hmr', heartbeat: 10 * 1000
 	}));
 	return new Promise((resolve) => {
 		app.listen((config as any).devServer.port, '127.0.0.1', function(err: any) {
