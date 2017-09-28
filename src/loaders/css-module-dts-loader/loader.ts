@@ -71,8 +71,8 @@ function traverseNode(node: Node, filePaths: string[] = []): string[] {
 	return filePaths;
 }
 
-export default function (this: webpack.LoaderContext, content: string, sourceMap?: string) {
-	const callback = this.async();
+export default function (this: webpack.loader.LoaderContext, content: string, sourceMap?: string) {
+	const callback = this.async() as Function;
 	const { type = 'ts', instanceName }: LoaderArgs = getOptions(this);
 
 	Promise.resolve().then(() => {

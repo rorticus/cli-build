@@ -23,7 +23,7 @@ export interface BuildArgs {
 }
 
 interface ConfigFactory {
-	(args: Partial<BuildArgs>): webpack.Config;
+	(args: Partial<BuildArgs>): webpack.Configuration;
 }
 
 interface WebpackOptions {
@@ -43,7 +43,7 @@ function mergeConfigArgs(...sources: BuildArgs[]): BuildArgs {
 	}, Object.create(null));
 }
 
-function compile(config: webpack.Config, options: WebpackOptions, args: BuildArgs): Promise<void> {
+function compile(config: webpack.Configuration, options: WebpackOptions, args: BuildArgs): Promise<void> {
 	const compiler = webpack(config);
 	fixMultipleWatchTrigger(compiler);
 	logUpdate('');
@@ -58,7 +58,7 @@ function compile(config: webpack.Config, options: WebpackOptions, args: BuildArg
 		});
 		spinner.start();
 		return new Promise<void>((resolve, reject) => {
-			compiler.watch(config.watchOptions, (err: any, stats: any) => {
+			compiler.watch((config as any).watchOptions, (err: any, stats: any) => {
 				logStats(stats, config);
 			});
 		});
@@ -104,7 +104,7 @@ ${chalk.bgYellow(chalk.black(serve ? `served at: ${chalk.underline('http://local
 	`);
 }
 
-function watch(config: webpack.Config, options: WebpackOptions, args: BuildArgs): Promise<void> {
+function watch(config: webpack.Configuration, options: WebpackOptions, args: BuildArgs): Promise<void> {
 	const app = express();
 	const compiler = webpack(config);
 	const spinner = ora('building');

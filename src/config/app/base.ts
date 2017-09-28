@@ -1,5 +1,4 @@
 import webpack = require('webpack');
-import NormalModuleReplacementPlugin = require('webpack/lib/NormalModuleReplacementPlugin');
 import Set from '@dojo/shim/Set';
 import { existsSync } from 'fs';
 import * as path from 'path';
@@ -56,7 +55,7 @@ function getUMDCompatLoader(options: { bundles?: { [key: string ]: string[] } })
 
 function getCSSReplacerPlugin() {
 	const replacedModules = new Set<string>();
-	return new NormalModuleReplacementPlugin(/\.m.css$/, result => {
+	return new webpack.NormalModuleReplacementPlugin(/\.m.css$/, (result: any) => {
 		const requestFileName = path.resolve(result.context, result.request);
 		const jsFileName = requestFileName + '.js';
 		if (replacedModules.has(requestFileName)) {
@@ -96,13 +95,16 @@ const removeEmpty = (items: any[]) => items.filter((item) => item);
 
 function webpackConfig(args: Partial<BuildArgs>) {
 	args = args || {};
-	const serviceWorker = args.pwa && args.pwa.serviceWorker && { ...args.pwa.serviceWorker, AppCache: false };
+	const serviceWorker = args.pwa && args.pwa.serviceWorker && { ...{ ServiceWorker: { entry: path.join(__dirname, './sw-handler.js') } }, ...args.pwa.serviceWorker, AppCache: false };
 	const manifest = args.pwa && args.pwa.manifest;
 
-	const config: webpack.Config = {
+	const config: webpack.Configuration = {
 		entry: { [ mainEntry ]: removeEmpty([ path.join(srcPath, 'main.css'), path.join(srcPath, 'main.ts'), serviceWorker && path.join(__dirname, 'sw.js') ]) },
 		node: { dgram: 'empty', net: 'empty', tls: 'empty', fs: 'empty' },
 		plugins: removeEmpty([
+			serviceWorker && new webpack.DefinePlugin({
+				'SW_ROUTES': JSON.stringify(serviceWorker.request || [])
+			}),
 			new AutoRequireWebpackPlugin(mainEntry),
 			new webpack.BannerPlugin(banner),
 			new IgnorePlugin(/request\/providers\/node/),
