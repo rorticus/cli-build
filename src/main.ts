@@ -94,7 +94,7 @@ ${chalk.red(stats.errors.map((error: string) => stripAnsi(error)))}
 
 	const warnings = stats.warnings.length ? `
 ${chalk.yellow('warnings:')}
-${chalk.gray(stats.warnings)}
+${chalk.gray(stats.warnings.map((warning: string) => stripAnsi(warning)))}
 ` : '';
 
 	logUpdate(`
