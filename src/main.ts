@@ -13,6 +13,7 @@ const logSymbols = require('log-symbols');
 const chalk = require('chalk');
 const typescript = require('typescript');
 const version = require('./package.json').version;
+const stripAnsi = require('strip-ansi');
 
 export interface Bundles {
 	[key: string]: string[];
@@ -28,11 +29,6 @@ interface ConfigFactory {
 	(args: Partial<BuildArgs>): webpack.Configuration;
 }
 
-interface WebpackOptions {
-	compress?: boolean;
-	stats?: any;
-}
-
 function mergeConfigArgs(...sources: BuildArgs[]): BuildArgs {
 	return sources.reduce((args: BuildArgs, source: BuildArgs) => {
 		Object.keys(source).forEach((key: string) => {
@@ -45,7 +41,7 @@ function mergeConfigArgs(...sources: BuildArgs[]): BuildArgs {
 	}, Object.create(null));
 }
 
-function compile(config: webpack.Configuration, options: WebpackOptions, args: BuildArgs): Promise<void> {
+function compile(config: webpack.Configuration, options: any, args: BuildArgs): Promise<void> {
 	const compiler = webpack(config);
 	fixMultipleWatchTrigger(compiler);
 	logUpdate('');
@@ -60,8 +56,8 @@ function compile(config: webpack.Configuration, options: WebpackOptions, args: B
 		});
 		spinner.start();
 		return new Promise<void>((resolve, reject) => {
-			compiler.watch((config as any).watchOptions, (err: any, stats: any) => {
-				logStats(stats, config);
+			compiler.watch((config as any).watchOptions, (err: any, stats) => {
+				logStats(stats.toJson(), config);
 			});
 		});
 	}
@@ -74,15 +70,7 @@ function compile(config: webpack.Configuration, options: WebpackOptions, args: B
 			}
 			if (stats) {
 				spinner.stop();
-				logStats(stats, config);
-
-				if (stats.compilation && stats.compilation.errors && stats.compilation.errors.length > 0 && !args.force) {
-					reject({
-						exitCode: 1,
-						message: 'The build failed with errors. Use the --force to overcome this obstacle.'
-					});
-					return;
-				}
+				logStats(stats.toJson(), config);
 			}
 			resolve();
 		});
@@ -90,16 +78,34 @@ function compile(config: webpack.Configuration, options: WebpackOptions, args: B
 }
 
 function logStats(stats: any, config: any, serve = false) {
-	const assets = Object.keys(stats.compilation.assets).map((name) => {
-		const size = (stats.compilation.assets[name].size() / 1000).toFixed(2);
-		return `${name} ${chalk.yellow(`(${size}kb)`)}`;
+	const assets = stats.assets.map((asset: any) => {
+		const size = (asset.size / 1000).toFixed(2);
+		return `${asset.name} ${chalk.yellow(`(${size}kb)`)}`;
 	});
+
+	const chunks = stats.chunks.map((chunk: any) => {
+		return `${chunk.names[0]}`;
+	});
+
+	const errors = stats.errors.length ? `
+${chalk.yellow('errors:')}
+${chalk.red(stats.errors.map((error: string) => stripAnsi(error)))}
+` : '';
+
+	const warnings = stats.warnings.length ? `
+${chalk.yellow('warnings:')}
+${chalk.gray(stats.warnings)}
+` : '';
+
 	logUpdate(`
 ${logSymbols.info} cli-build: ${version}
 ${logSymbols.info} typescript: ${typescript.version}
 ${logSymbols.success} hash: ${stats.hash}
-${logSymbols.error} errors: ${stats.compilation.errors.length}
-${logSymbols.warning} warnings: ${stats.compilation.warnings.length}
+${logSymbols.error} errors: ${stats.errors.length}
+${logSymbols.warning} warnings: ${stats.warnings.length}
+${errors}${warnings}
+${chalk.yellow('chunks:')}
+${columns(chunks)}
 
 ${chalk.yellow('assets:')}
 ${columns(assets)}
@@ -108,7 +114,7 @@ ${chalk.yellow(serve ? `served at: ${chalk.cyan(chalk.underline('http://localhos
 	`);
 }
 
-function watch(config: webpack.Configuration, options: WebpackOptions, args: BuildArgs): Promise<void> {
+function watch(config: webpack.Configuration, options: any, args: BuildArgs): Promise<void> {
 	const app = express();
 	(config as any).plugins.push(new webpack.HotModuleReplacementPlugin());
 	Object.keys(config.entry).forEach((name) => {
@@ -118,7 +124,7 @@ function watch(config: webpack.Configuration, options: WebpackOptions, args: Bui
 	const spinner = ora('building');
 	compiler.plugin('done', (stats) => {
 		spinner.stop();
-		logStats(stats, config, true);
+		logStats(stats.toJson(), config, true);
 	});
 	compiler.plugin('invalid', () => {
 		logUpdate('');
@@ -165,7 +171,7 @@ const command: Command<BuildArgs> = {
 	run(helper: Helper, args: BuildArgs): Promise<void> {
 		console.log = () => {};
 		const dojoRc = helper.configuration.get() || Object.create(null);
-		const options: WebpackOptions = {
+		const options = {
 			compress: true,
 			stats: 'minimal'
 		};

@@ -82,6 +82,7 @@
     "promise-loader": "^1.0.0",
     "save-dev": "^2.0.0",
     "source-map-loader-cli": "0.0.1",
+    "strip-ansi": "^4.0.0",
     "style-loader": "0.13.2",
     "sw-toolbox": "^3.6.0",
     "ts-loader": "2.3.1",
