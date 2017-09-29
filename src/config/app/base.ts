@@ -10,6 +10,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const AutoRequireWebpackPlugin = require('auto-require-webpack-plugin');
 const OfflinePlugin = require('offline-plugin');
 const WebpackPwaManifest = require('webpack-pwa-manifest');
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 const basePath = process.cwd();
 const srcPath = path.join(basePath, 'src');
@@ -70,7 +71,6 @@ function getCSSReplacerPlugin() {
 function getCSSModuleLoader() {
 	const localIdentName = '[hash:base64:8]';
 	return [
-		'style-loader',
 		'css-module-decorator-loader',
 		`css-loader?modules&sourceMap&importLoaders=1&localIdentName=${localIdentName}`,
 		{
@@ -120,7 +120,8 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			new IgnorePlugin(/request\/providers\/node/),
 			getCSSReplacerPlugin(),
 			new CopyWebpackPlugin([ { context: srcPath, from: '**/*', ignore: '*.ts' } ]),
-			new HtmlWebpackPlugin({ inject: true, chunks: [ mainEntry ], template: path.join(srcPath, 'index.html') }),
+			new ExtractTextPlugin({ filename: 'main.css', allChunks: true }),
+			new HtmlWebpackPlugin({ inject: 'body', chunks: [ mainEntry ], template: path.join(srcPath, 'index.html') }),
 			serviceWorker && new OfflinePlugin(serviceWorker),
 			manifest && new WebpackPwaManifest(manifest)
 		]),
@@ -147,11 +148,11 @@ function webpackConfig(args: Partial<BuildArgs>) {
 				{ include: srcPath, test: /.*\.ts?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=ts&instanceName=0_dojo' },
 				{ include: srcPath, test: /.*\.m\.css?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=css' },
 				{ include: srcPath, test: /.*\.ts(x)?$/, use: [ getUMDCompatLoader({ bundles: args.bundles }), { loader: 'ts-loader', options: { instance: 'dojo' } } ]},
-				{ include: srcPath, test: /.*\.css?$/, use: getCSSModuleLoader() },
+				{ include: srcPath, test: /.*\.css?$/, use: ExtractTextPlugin.extract({ use: getCSSModuleLoader() }) },
 				{ test: /\.js?$/, loader: 'umd-compat-loader' },
 				{ test: new RegExp(`globalize(\\${path.sep}|$)`), loader: 'imports-loader?define=>false' },
 				{ test: /.*\.(gif|png|jpe?g|svg|eot|ttf|woff|woff2)$/i, loader: 'file-loader?hash=sha512&digest=hex&name=[hash:base64:8].[ext]' },
-				{ test: /\.css$/, exclude: srcPath, use: [ 'style-loader', 'css-loader?sourceMap' ] },
+				{ test: /\.css$/, exclude: srcPath, use: ExtractTextPlugin.extract({ use: [ 'css-loader?sourceMap' ] }) },
 				{ test: /\.m\.css.js$/, exclude: srcPath, use: ['json-css-module-loader'] }
 			])
 		}
