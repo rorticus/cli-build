@@ -120,7 +120,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			new IgnorePlugin(/request\/providers\/node/),
 			getCSSReplacerPlugin(),
 			new CopyWebpackPlugin([ { context: srcPath, from: '**/*', ignore: '*.ts' } ]),
-			new ExtractTextPlugin({ filename: 'main.css', allChunks: true }),
+			new ExtractTextPlugin({ filename: 'src/main.css', allChunks: true }),
 			new HtmlWebpackPlugin({ inject: 'body', chunks: [ mainEntry ], template: path.join(srcPath, 'index.html') }),
 			serviceWorker && new OfflinePlugin(serviceWorker),
 			manifest && new WebpackPwaManifest(manifest)
