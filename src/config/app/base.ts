@@ -11,6 +11,8 @@ const AutoRequireWebpackPlugin = require('auto-require-webpack-plugin');
 const OfflinePlugin = require('offline-plugin');
 const WebpackPwaManifest = require('webpack-pwa-manifest');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const jsdom = require('jsdom');
+const { JSDOM } = jsdom;
 
 const basePath = process.cwd();
 const srcPath = path.join(basePath, 'src');
@@ -94,41 +96,55 @@ function getCSSModuleLoader() {
 const removeEmpty = (items: any[]) => items.filter((item) => item);
 
 class BuildTimeRender {
-	private _paths: any;
+	private _paths: string[];
 
 	constructor(args = { paths: [] }) {
-		this._paths = args.paths;
+		this._paths = [ '', ...args.paths ];
+	}
+
+	private _render(compiler: webpack.Compiler, location: string) {
+		const output = compiler.options.output && compiler.options.output.path || basePath;
+		const window: any = (new JSDOM(``, { runScripts: 'outside-only' })).window;
+		const document: any = window.document;
+		const entry = readFileSync(path.join(output, mainEntry + '.js'), 'utf-8');
+		window.eval(`
+window.location.hash = '${location}';
+window.DojoHasEnvironment = { staticFeatures: { 'build-time-render': true } };
+window.Element = function() {};
+window.requestAnimationFrame = function() {};
+window.cancelAnimationFrame = function() {};
+window.IntersectionObserver = function() {};
+		`);
+		window.eval(entry);
+
+		const treeWalker = document.createTreeWalker(document.body, window.NodeFilter.SHOW_ELEMENT);
+		let classes: string[] = [];
+
+		while (treeWalker.nextNode()) {
+			const node: any = treeWalker.currentNode;
+			node.classList.length && classes.push.apply(classes, node.classList);
+		}
+
+		classes = classes.map((className) => `.${className}`);
+		return { html: document.body.innerHTML, classes };
 	}
 
 	apply(compiler: webpack.Compiler) {
 		compiler.plugin('done', () => {
 			const buildTag = '<!-- btr -->';
 			const output = compiler.options.output && compiler.options.output.path || basePath;
-			let html = readFileSync(path.join(output, 'index.html'), 'utf-8');
-			if (html.indexOf(buildTag) === -1) { return; }
-			const cleanup = require('jsdom-global')();
+			let htmlContent = readFileSync(path.join(output, 'index.html'), 'utf-8');
+			if (htmlContent.indexOf(buildTag) === -1) { return; }
 			const filterCss = require('filter-css');
-			(global as any).window.DojoHasEnvironment = {
-				staticFeatures: {
-					'build-time-render': true
-				}
-			};
-			(global as any).Element = function() {};
-			(global as any).requestAnimationFrame = () => {};
-			(global as any).cancelAnimationFrame = () => {};
-			(global as any).IntersectionObserver = () => {};
-			require(path.join(output, mainEntry));
 
+			let html: string[] = [];
 			let classes: string[] = [];
 
-			const treeWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT);
-
-			while (treeWalker.nextNode()) {
-				const node: any = treeWalker.currentNode;
-				node.classList.length && classes.push.apply(classes, node.classList);
-			}
-
-			classes = classes.map((className) => `.${className}`);
+			this._paths.forEach((path) => {
+				const result = this._render(compiler, path);
+				classes = [ ...classes, ...result.classes ];
+				html = [ ...html, result.html ];
+			});
 
 			const result = filterCss(path.join(output, mainEntry + '.css'), (context: any, value: any, node: any) => {
 				if (context === 'selector') {
@@ -141,15 +157,32 @@ class BuildTimeRender {
 				}
 			}).replace(/\/\*# sourceMappingURL\=.*/, '');
 
+			const replacementHTML = html.map((part, i) => {
+				return `<div id="__btr-${i}__" class="__btr__" style="display:none;">
+${part}
+</div>`;
+			}).join('\r\n');
 			const replacement = `
-${document.body.innerHTML}
+${replacementHTML}
+<script>
+	var index = ${JSON.stringify(this._paths)}.indexOf(window.location.hash);
+	var element;
+	if (index !== -1) {
+		element = document.getElementById('__btr-' + index + '__');
+		element.style.display = '';
+		element.id = 'app'
+	}
+	var elements = document.querySelectorAll('.__btr__');
+	for (var i = 0; i < elements.length; i++) {
+		elements[i] !== element && elements[i].parentNode.removeChild(elements[i]);
+	}
+</script>
 <link rel="stylesheet" href="${mainEntry}.css" media="none" onload="if(media!='all')media='all'">
 `;
 
-			html = html.replace(`<link href="${mainEntry}.css" rel="stylesheet">`, `<style>${result}</style>`);
-			html = html.replace(buildTag, replacement);
-			writeFileSync(path.join(output, 'index.html'), html);
-			cleanup();
+			htmlContent = htmlContent.replace(`<link href="${mainEntry}.css" rel="stylesheet">`, `<style>${result}</style>`);
+			htmlContent = htmlContent.replace(buildTag, replacement);
+			writeFileSync(path.join(output, 'index.html'), htmlContent);
 		});
 	}
 }
@@ -186,7 +219,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			new HtmlWebpackPlugin({ inject: 'body', chunks: [ mainEntry ], template: path.join(srcPath, 'index.html') }),
 			serviceWorker && new OfflinePlugin(serviceWorker),
 			manifest && new WebpackPwaManifest(manifest),
-			new BuildTimeRender()
+			new BuildTimeRender(args.btr)
 		]),
 		output: {
 			chunkFilename: '[name].js',
