@@ -96,24 +96,25 @@ function getCSSModuleLoader() {
 const removeEmpty = (items: any[]) => items.filter((item) => item);
 
 class BuildTimeRender {
-	private _paths: string[];
+	private _paths: any[];
 
 	constructor(args = { paths: [] }) {
 		this._paths = [ '', ...args.paths ];
 	}
 
-	private _render(compiler: webpack.Compiler, location: string) {
+	private _render(compiler: webpack.Compiler, location: string, htmlContent: string) {
 		const output = compiler.options.output && compiler.options.output.path || basePath;
-		const window: any = (new JSDOM(``, { runScripts: 'outside-only' })).window;
+		const window: any = (new JSDOM(htmlContent, { runScripts: 'outside-only' })).window;
 		const document: any = window.document;
+		const tag = document.querySelector('script[type="build-time-render"]');
+		const parent = tag.parentNode;
+		parent.removeChild(tag);
 		const entry = readFileSync(path.join(output, mainEntry + '.js'), 'utf-8');
 		window.eval(`
 window.location.hash = '${location}';
 window.DojoHasEnvironment = { staticFeatures: { 'build-time-render': true } };
-window.Element = function() {};
 window.requestAnimationFrame = function() {};
 window.cancelAnimationFrame = function() {};
-window.IntersectionObserver = function() {};
 		`);
 		window.eval(entry);
 
@@ -126,12 +127,12 @@ window.IntersectionObserver = function() {};
 		}
 
 		classes = classes.map((className) => `.${className}`);
-		return { html: document.body.innerHTML, classes };
+		return { html: parent.outerHTML, classes };
 	}
 
 	apply(compiler: webpack.Compiler) {
 		compiler.plugin('done', () => {
-			const buildTag = '<!-- btr -->';
+			const buildTag = '<script type="build-time-render"></script>';
 			const output = compiler.options.output && compiler.options.output.path || basePath;
 			let htmlContent = readFileSync(path.join(output, 'index.html'), 'utf-8');
 			if (htmlContent.indexOf(buildTag) === -1) { return; }
@@ -141,7 +142,8 @@ window.IntersectionObserver = function() {};
 			let classes: string[] = [];
 
 			this._paths.forEach((path) => {
-				const result = this._render(compiler, path);
+				path = typeof path === 'object' ? path.path : path;
+				const result = this._render(compiler, path, htmlContent);
 				classes = [ ...classes, ...result.classes ];
 				html = [ ...html, result.html ];
 			});
@@ -157,30 +159,33 @@ window.IntersectionObserver = function() {};
 				}
 			}).replace(/\/\*# sourceMappingURL\=.*/, '');
 
-			const replacementHTML = html.map((part, i) => {
-				return `<div id="__btr-${i}__" class="__btr__" style="display:none;">
-${part}
-</div>`;
-			}).join('\r\n');
 			const replacement = `
-${replacementHTML}
+${buildTag}
 <script>
-	var index = ${JSON.stringify(this._paths)}.indexOf(window.location.hash);
-	var element;
-	if (index !== -1) {
-		element = document.getElementById('__btr-' + index + '__');
-		element.style.display = '';
-		element.id = 'app'
-	}
-	var elements = document.querySelectorAll('.__btr__');
-	for (var i = 0; i < elements.length; i++) {
-		elements[i] !== element && elements[i].parentNode.removeChild(elements[i]);
-	}
+	(function () {
+		var paths = ${JSON.stringify(this._paths)};
+		var html = ${JSON.stringify(html)};
+		var element = document.querySelector('script[type="build-time-render"]');
+		var target;
+		paths.some(function (path, i) {
+			target = html[i];
+			return (typeof path === 'string' && path === window.location.hash) || (typeof path === 'object' && path.match && new RegExp(path.match.join('|')).test(window.location.hash));
+		});
+		if (target && element) {
+			var frag = document.createRange().createContextualFragment(target);
+			element.parentNode.parentNode.replaceChild(frag, element.parentNode);
+		}
+		else if (element) {
+			element.parentNode.removeChild(element);
+		}
+	}())
 </script>
-<link rel="stylesheet" href="${mainEntry}.css" media="none" onload="if(media!='all')media='all'">
 `;
+			const script = `<script type="text/javascript" src="${mainEntry}.js"></script>`;
+			const css = `<link rel="stylesheet" href="${mainEntry}.css" media="none" onload="if(media!='all')media='all'" />`;
 
 			htmlContent = htmlContent.replace(`<link href="${mainEntry}.css" rel="stylesheet">`, `<style>${result}</style>`);
+			htmlContent = htmlContent.replace(script, `${css}${script}`);
 			htmlContent = htmlContent.replace(buildTag, replacement);
 			writeFileSync(path.join(output, 'index.html'), htmlContent);
 		});
