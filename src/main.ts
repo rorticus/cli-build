@@ -2,6 +2,7 @@ import { Command, Helper, OptionsHelper } from '@dojo/interfaces/cli';
 import webpack = require('webpack');
 import prodConfig from './config/app/prod';
 import devConfig from './config/app/dev';
+import * as fs from 'fs';
 
 const fixMultipleWatchTrigger = require('webpack-mild-compile');
 const express = require('express');
@@ -14,6 +15,7 @@ const chalk = require('chalk');
 const typescript = require('typescript');
 const version = require('./package.json').version;
 const stripAnsi = require('strip-ansi');
+const gzipSize = require('gzip-size');
 
 export interface Bundles {
 	[key: string]: string[];
@@ -80,7 +82,9 @@ function compile(config: webpack.Configuration, options: any, args: BuildArgs): 
 function logStats(stats: any, config: any, serve = false) {
 	const assets = stats.assets.map((asset: any) => {
 		const size = (asset.size / 1000).toFixed(2);
-		return `${asset.name} ${chalk.yellow(`(${size}kb)`)}`;
+		const content = fs.readFileSync(config.output.path + '/' + asset.name, 'utf-8');
+		const compressedSize = (gzipSize.sync(content) / 1000).toFixed(2);
+		return `${asset.name} ${chalk.yellow(`(${size}kb)`)} / ${chalk.blue(`(${compressedSize}kb gz)`)}`;
 	});
 
 	const chunks = stats.chunks.map((chunk: any) => {
