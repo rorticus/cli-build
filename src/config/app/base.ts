@@ -131,7 +131,6 @@ window.cancelAnimationFrame = function() {};
 		}
 
 		classes = classes.map((className) => `.${className}`);
-		console.warn(parent.outerHTML);
 		return { html: parent.outerHTML, classes };
 	}
 
@@ -201,7 +200,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 		AppCache: false
 	};
 	const manifest = args.pwa && args.pwa.manifest;
-	const buildTimeRender = args.buildTimeRender;
+	const buildTimeRender = !args['watch-serve'] && args.buildTimeRender;
 
 	const config: webpack.Configuration = {
 		entry: {
