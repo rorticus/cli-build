@@ -81,6 +81,9 @@ function compile(config: webpack.Configuration, options: any, args: BuildArgs): 
 
 function logStats(stats: any, config: any, serve = false) {
 	const assets = stats.assets.map((asset: any) => {
+		if (asset.name.match(/\.hot-update\.js/)) {
+			return undefined;
+		}
 		if (!serve) {
 			const size = (asset.size / 1000).toFixed(2);
 			const content = fs.readFileSync(config.output.path + '/' + asset.name, 'utf-8');
@@ -88,7 +91,7 @@ function logStats(stats: any, config: any, serve = false) {
 			return `${asset.name} ${chalk.yellow(`(${size}kb)`)} / ${chalk.blue(`(${compressedSize}kb gz)`)}`;
 		}
 		return asset.name;
-	});
+	}).filter((output: string) => output);
 
 	const chunks = stats.chunks.map((chunk: any) => {
 		return `${chunk.names[0]}`;
