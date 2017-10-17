@@ -121,7 +121,7 @@ ${chalk.yellow(serve ? `served at: ${chalk.cyan(chalk.underline('http://localhos
 	`);
 }
 
-function watch(config: webpack.Configuration, options: any, args: BuildArgs): Promise<void> {
+function watch(config: webpack.Configuration, options: any, args: BuildArgs) {
 	const app = express();
 	(config as any).plugins.push(new webpack.HotModuleReplacementPlugin());
 	Object.keys(config.entry).forEach((name) => {
@@ -158,7 +158,7 @@ const command: Command<BuildArgs> = {
 	group: 'build',
 	name: 'webpack',
 	description: 'create a build of your application',
-	register(options: OptionsHelper): void {
+	register(options: OptionsHelper) {
 		options('dev', {
 			describe: 'dev',
 			default: false,
@@ -175,7 +175,7 @@ const command: Command<BuildArgs> = {
 			type: 'boolean'
 		});
 	},
-	run(helper: Helper, args: BuildArgs): Promise<void> {
+	run(helper: Helper, args: BuildArgs) {
 		console.log = () => {};
 		const dojoRc = helper.configuration.get() || Object.create(null);
 		const options = {
