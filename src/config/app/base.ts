@@ -223,8 +223,8 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			new ExtractTextPlugin({ filename: 'src/main.css', allChunks: true }),
 			new HtmlWebpackPlugin({ inject: 'body', chunks: [ mainEntry ], template: path.join(srcPath, 'index.html') }),
 			serviceWorker && new OfflinePlugin(serviceWorker),
-			manifest && new WebpackPwaManifest(manifest),
-			new BuildTimeRender(args.btr)
+			manifest && new WebpackPwaManifest(manifest)
+			/*new BuildTimeRender(args.btr)*/
 		]),
 		output: {
 			chunkFilename: '[name].js',

@@ -81,10 +81,13 @@ function compile(config: webpack.Configuration, options: any, args: BuildArgs): 
 
 function logStats(stats: any, config: any, serve = false) {
 	const assets = stats.assets.map((asset: any) => {
-		const size = (asset.size / 1000).toFixed(2);
-		const content = fs.readFileSync(config.output.path + '/' + asset.name, 'utf-8');
-		const compressedSize = (gzipSize.sync(content) / 1000).toFixed(2);
-		return `${asset.name} ${chalk.yellow(`(${size}kb)`)} / ${chalk.blue(`(${compressedSize}kb gz)`)}`;
+		if (!serve) {
+			const size = (asset.size / 1000).toFixed(2);
+			const content = fs.readFileSync(config.output.path + '/' + asset.name, 'utf-8');
+			const compressedSize = (gzipSize.sync(content) / 1000).toFixed(2);
+			return `${asset.name} ${chalk.yellow(`(${size}kb)`)} / ${chalk.blue(`(${compressedSize}kb gz)`)}`;
+		}
+		return asset.name;
 	});
 
 	const chunks = stats.chunks.map((chunk: any) => {
@@ -122,7 +125,7 @@ function watch(config: webpack.Configuration, options: any, args: BuildArgs): Pr
 	const app = express();
 	(config as any).plugins.push(new webpack.HotModuleReplacementPlugin());
 	Object.keys(config.entry).forEach((name) => {
-		(config as any).entry[name].push('webpack-hot-middleware/client?path=/__webpack_hmr&timeout=20000');
+		(config as any).entry[name].unshift(__dirname + '/client?path=/__webpack_hmr&timeout=20000&reload=true');
 	});
 	const compiler = webpack(config);
 	const spinner = ora('building');
