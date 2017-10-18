@@ -16,6 +16,8 @@ const { JSDOM } = jsdom;
 
 const basePath = process.cwd();
 const srcPath = path.join(basePath, 'src');
+const testPath = path.join(basePath, 'tests');
+const allPaths = [ srcPath,  testPath ];
 const mainEntry = 'src/main';
 const packageJsonPath = path.join(basePath, 'package.json');
 const packageJson = existsSync(packageJsonPath) ? require(packageJsonPath) : {};
@@ -249,15 +251,15 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			rules: removeEmpty([
 				tsLint && { test: /\.ts$/, enforce: 'pre', loader: 'tslint-loader', options: { configuration: tsLint, emitErrors: true, failOnHint: true } },
 				{ test: /@dojo\/.*\.js$/, enforce: 'pre', loader: 'source-map-loader-cli', options: { includeModulePaths: true } },
-				{ include: srcPath, test: /.*\.ts?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=ts&instanceName=0_dojo' },
-				{ include: srcPath, test: /.*\.m\.css?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=css' },
-				{ include: srcPath, test: /.*\.ts(x)?$/, use: [ getUMDCompatLoader({ bundles: args.bundles }), { loader: 'ts-loader', options: { instance: 'dojo' } } ]},
-				{ include: srcPath, test: /.*\.css?$/, use: ExtractTextPlugin.extract({ use: getCSSModuleLoader() }) },
+				{ include: allPaths, test: /.*\.ts?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=ts&instanceName=0_dojo' },
+				{ include: allPaths, test: /.*\.m\.css?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=css' },
+				{ include: allPaths, test: /.*\.ts(x)?$/, use: [ getUMDCompatLoader({ bundles: args.bundles }), { loader: 'ts-loader', options: { instance: 'dojo' } } ]},
+				{ include: allPaths, test: /.*\.css?$/, use: ExtractTextPlugin.extract({ use: getCSSModuleLoader() }) },
 				{ test: /\.js?$/, loader: 'umd-compat-loader' },
 				{ test: new RegExp(`globalize(\\${path.sep}|$)`), loader: 'imports-loader?define=>false' },
 				{ test: /.*\.(gif|png|jpe?g|svg|eot|ttf|woff|woff2)$/i, loader: 'file-loader?hash=sha512&digest=hex&name=[hash:base64:8].[ext]' },
-				{ test: /\.css$/, exclude: srcPath, use: ExtractTextPlugin.extract({ use: [ 'css-loader?sourceMap' ] }) },
-				{ test: /\.m\.css.js$/, exclude: srcPath, use: ['json-css-module-loader'] }
+				{ test: /\.css$/, exclude: allPaths, use: ExtractTextPlugin.extract({ use: [ 'css-loader?sourceMap' ] }) },
+				{ test: /\.m\.css.js$/, exclude: allPaths, use: ['json-css-module-loader'] }
 			])
 		}
 	};
