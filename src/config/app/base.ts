@@ -72,29 +72,6 @@ function getCSSReplacerPlugin() {
 	});
 }
 
-function getCSSModuleLoader() {
-	const localIdentName = '[hash:base64:8]';
-	return [
-		'css-module-decorator-loader',
-		`css-loader?modules&sourceMap&importLoaders=1&localIdentName=${localIdentName}`,
-		{
-			loader: 'postcss-loader?sourceMap',
-			options: {
-				plugins: [
-					require('postcss-import')(),
-					require('postcss-cssnext')({
-						features: {
-							autoprefixer: {
-								browsers: [ 'last 2 versions', 'ie >= 10' ]
-							}
-						}
-					})
-				]
-			}
-		}
-	];
-}
-
 const removeEmpty = (items: any[]) => items.filter((item) => item);
 
 class BuildTimeRender {
@@ -215,9 +192,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 		},
 		node: { dgram: 'empty', net: 'empty', tls: 'empty', fs: 'empty' },
 		plugins: removeEmpty([
-			serviceWorker && new webpack.DefinePlugin({
-				'SW_ROUTES': JSON.stringify(serviceWorker.request || [])
-			}),
+			serviceWorker && new webpack.DefinePlugin({ SW_ROUTES: JSON.stringify(serviceWorker.request || []) }),
 			new AutoRequireWebpackPlugin(mainEntry),
 			new webpack.BannerPlugin(banner),
 			new IgnorePlugin(/request\/providers\/node/),
@@ -238,15 +213,16 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			libraryTarget: 'umd',
 			path: path.resolve('./output')
 		},
-		devServer: {
-			port: 8888
-		},
+		devServer: { port: 8888 },
 		devtool: 'source-map',
 		watchOptions: { ignored: /node_modules/ },
 		resolve: {
 			modules: [ basePath, path.join(basePath, 'node_modules') ],
-			extensions: ['.ts', '.tsx', '.js'] },
-		resolveLoader: { modules: [ path.join(__dirname, '../../loaders'), path.join(__dirname, '../../node_modules'), 'node_modules' ] },
+			extensions: ['.ts', '.tsx', '.js']
+		},
+		resolveLoader: {
+			modules: [ path.join(__dirname, '../../loaders'), path.join(__dirname, '../../node_modules'), 'node_modules' ]
+		},
 		module: {
 			rules: removeEmpty([
 				tsLint && { test: /\.ts$/, enforce: 'pre', loader: 'tslint-loader', options: { configuration: tsLint, emitErrors: true, failOnHint: true } },
@@ -254,12 +230,24 @@ function webpackConfig(args: Partial<BuildArgs>) {
 				{ include: allPaths, test: /.*\.ts?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=ts&instanceName=0_dojo' },
 				{ include: allPaths, test: /.*\.m\.css?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=css' },
 				{ include: allPaths, test: /.*\.ts(x)?$/, use: [ getUMDCompatLoader({ bundles: args.bundles }), { loader: 'ts-loader', options: { instance: 'dojo' } } ]},
-				{ include: allPaths, test: /.*\.css?$/, use: ExtractTextPlugin.extract({ use: getCSSModuleLoader() }) },
 				{ test: /\.js?$/, loader: 'umd-compat-loader' },
 				{ test: new RegExp(`globalize(\\${path.sep}|$)`), loader: 'imports-loader?define=>false' },
 				{ test: /.*\.(gif|png|jpe?g|svg|eot|ttf|woff|woff2)$/i, loader: 'file-loader?hash=sha512&digest=hex&name=[hash:base64:8].[ext]' },
 				{ test: /\.css$/, exclude: allPaths, use: ExtractTextPlugin.extract({ use: [ 'css-loader?sourceMap' ] }) },
-				{ test: /\.m\.css.js$/, exclude: allPaths, use: ['json-css-module-loader'] }
+				{ test: /\.m\.css.js$/, exclude: allPaths, use: ['json-css-module-loader'] },
+				{ include: allPaths, test: /.*\.css?$/, use: ExtractTextPlugin.extract({ use: [
+					'css-module-decorator-loader',
+					`css-loader?modules&sourceMap&importLoaders=1&localIdentName=[hash:base64:8]`,
+					{
+						loader: 'postcss-loader?sourceMap',
+						options: {
+							plugins: [
+								require('postcss-import')(),
+								require('postcss-cssnext')({ features: { autoprefixer: { browsers: [ 'last 2 versions', 'ie >= 10' ] } } })
+							]
+						}
+					}
+				]}) }
 			])
 		}
 	};
