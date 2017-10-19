@@ -96,6 +96,7 @@
     "tslint-loader": "3.5.3",
     "typed-css-modules": "0.2.0",
     "typescript": "2.4.2",
+    "uglify-js": "^2.8.29",
     "umd-compat-loader": "2.1.1",
     "webpack": "^3.6.0",
     "webpack-bundle-analyzer-sunburst": "1.2.0",

@@ -2,6 +2,7 @@ import { Command, Helper, OptionsHelper } from '@dojo/interfaces/cli';
 import webpack = require('webpack');
 import prodConfig from './config/app/prod';
 import devConfig from './config/app/dev';
+import testConfig from './config/app/test';
 import * as fs from 'fs';
 
 const fixMultipleWatchTrigger = require('webpack-mild-compile');
@@ -167,6 +168,11 @@ const command: Command<BuildArgs> = {
 			default: false,
 			type: 'boolean'
 		});
+		options('test', {
+			describe: 'test',
+			default: false,
+			type: 'boolean'
+		});
 		options('watch', {
 			describe: 'watch',
 			default: false,
@@ -188,7 +194,10 @@ const command: Command<BuildArgs> = {
 		const configArgs = mergeConfigArgs(dojoRc as BuildArgs, args);
 		configArgs.basePath = process.cwd();
 		let config;
-		if (args.dev) {
+		if (args.test) {
+			config = testConfig;
+		}
+		else if (args.dev) {
 			config = devConfig;
 		}
 		else {

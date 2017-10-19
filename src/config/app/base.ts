@@ -5,8 +5,6 @@ import * as path from 'path';
 import { BuildArgs } from '../../main';
 
 const IgnorePlugin = require('webpack/lib/IgnorePlugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
 const AutoRequireWebpackPlugin = require('auto-require-webpack-plugin');
 const OfflinePlugin = require('offline-plugin');
 const WebpackPwaManifest = require('webpack-pwa-manifest');
@@ -197,9 +195,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			new webpack.BannerPlugin(banner),
 			new IgnorePlugin(/request\/providers\/node/),
 			getCSSReplacerPlugin(),
-			new CopyWebpackPlugin([ { context: srcPath, from: '**/*', ignore: '*.ts' } ]),
 			new ExtractTextPlugin({ filename: 'src/main.css', allChunks: true }),
-			new HtmlWebpackPlugin({ inject: 'body', chunks: [ mainEntry ], template: path.join(srcPath, 'index.html') }),
 			serviceWorker && new OfflinePlugin(serviceWorker),
 			manifest && new WebpackPwaManifest(manifest),
 			buildTimeRender && new BuildTimeRender(buildTimeRender)

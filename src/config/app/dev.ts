@@ -1,26 +1,17 @@
 import { BuildArgs } from '../../main';
 import baseConfig from './base';
 import * as path from 'path';
-const globby = require('globby');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 function webpackConfig(args: Partial<BuildArgs>) {
 	const config: any = baseConfig(args);
-	const entry = config.entry;
-	config.entry = () => {
-		const units = globby.sync([`${args.basePath}/tests/unit/**/*.ts`])
-			.map((filename: string) => filename.replace(/\.ts$/, ''));
-
-		const functionals = globby.sync([`${args.basePath}/tests/functional/**/*.ts`])
-			.map((filename: string) => filename.replace(/\.ts$/, ''));
-
-		const testEntries = {
-			'tests/unit': units,
-			'tests/functional': functionals
-		};
-		return { ...entry, ...testEntries };
-	};
-	config.externals = config.externals || [];
-	config.externals.push(/^intern/);
+	const plugins = [
+		...config.plugins,
+		new CopyWebpackPlugin([ { context: 'src', from: '**/*', ignore: '*.ts' } ]),
+		new HtmlWebpackPlugin({ inject: true, chunks: [ 'src/main' ], template: 'src/index.html' })
+	];
+	config.plugins = plugins;
 	config.devtool = 'inline-source-map';
 	config.output.path = path.join(config.output.path, 'dev');
 	return config;
