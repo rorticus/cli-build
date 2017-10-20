@@ -54,6 +54,7 @@
     "@dojo/i18n": "beta2",
     "@dojo/shim": "beta2",
     "@dojo/static-optimize-plugin": "beta2",
+    "@dojo/webpack-contrib": "^0.1.0",
     "auto-require-webpack-plugin": "1.0.1",
     "bundle-loader": "0.5.5",
     "chalk": "^2.1.0",

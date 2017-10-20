@@ -232,7 +232,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 				{ test: /\.css$/, exclude: allPaths, use: ExtractTextPlugin.extract({ use: [ 'css-loader?sourceMap' ] }) },
 				{ test: /\.m\.css.js$/, exclude: allPaths, use: ['json-css-module-loader'] },
 				{ include: allPaths, test: /.*\.css?$/, use: ExtractTextPlugin.extract({ use: [
-					'css-module-decorator-loader',
+					'@dojo/webpack-contrib/css-module-decorator-loader',
 					`css-loader?modules&sourceMap&importLoaders=1&localIdentName=[hash:base64:8]`,
 					{
 						loader: 'postcss-loader?sourceMap',

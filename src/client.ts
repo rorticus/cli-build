@@ -1,5 +1,6 @@
 const client = require('webpack-hot-middleware/client');
 const Entities = require('html-entities').AllHtmlEntities;
+const ansiHTML = require('ansi-html');
 const entities = new Entities();
 
 const clientOverlay = document.createElement('div');
@@ -27,9 +28,8 @@ for (let key in styles) {
 	(clientOverlay as any).style[key] = (styles as any)[key];
 }
 
-const ansiHTML = require('ansi-html');
 const colors = {
-	reset: ['transparent', 'transparent'],
+	reset: [ 'transparent', 'transparent' ],
 	black: '181818',
 	red: 'E36049',
 	green: 'B3CB74',
