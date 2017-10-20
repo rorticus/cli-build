@@ -223,14 +223,14 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			rules: removeEmpty([
 				tsLint && { test: /\.ts$/, enforce: 'pre', loader: 'tslint-loader', options: { configuration: tsLint, emitErrors: true, failOnHint: true } },
 				{ test: /@dojo\/.*\.js$/, enforce: 'pre', loader: 'source-map-loader-cli', options: { includeModulePaths: true } },
-				{ include: allPaths, test: /.*\.ts?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=ts&instanceName=0_dojo' },
-				{ include: allPaths, test: /.*\.m\.css?$/, enforce: 'pre', loader: 'css-module-dts-loader?type=css' },
+				{ include: allPaths, test: /.*\.ts?$/, enforce: 'pre', loader: '@dojo/webpack-contrib/css-module-dts-loader?type=ts&instanceName=0_dojo' },
+				{ include: allPaths, test: /.*\.m\.css?$/, enforce: 'pre', loader: '@dojo/webpack-contrib/css-module-dts-loader?type=css' },
 				{ include: allPaths, test: /.*\.ts(x)?$/, use: [ getUMDCompatLoader({ bundles: args.bundles }), { loader: 'ts-loader', options: { instance: 'dojo' } } ]},
 				{ test: /\.js?$/, loader: 'umd-compat-loader' },
 				{ test: new RegExp(`globalize(\\${path.sep}|$)`), loader: 'imports-loader?define=>false' },
 				{ test: /.*\.(gif|png|jpe?g|svg|eot|ttf|woff|woff2)$/i, loader: 'file-loader?hash=sha512&digest=hex&name=[hash:base64:8].[ext]' },
 				{ test: /\.css$/, exclude: allPaths, use: ExtractTextPlugin.extract({ use: [ 'css-loader?sourceMap' ] }) },
-				{ test: /\.m\.css.js$/, exclude: allPaths, use: ['json-css-module-loader'] },
+				{ test: /\.m\.css.js$/, exclude: allPaths, use: [ 'json-css-module-loader' ] },
 				{ include: allPaths, test: /.*\.css?$/, use: ExtractTextPlugin.extract({ use: [
 					'@dojo/webpack-contrib/css-module-decorator-loader',
 					`css-loader?modules&sourceMap&importLoaders=1&localIdentName=[hash:base64:8]`,
