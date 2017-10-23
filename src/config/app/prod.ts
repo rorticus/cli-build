@@ -5,8 +5,8 @@ import * as path from 'path';
 
 const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer-sunburst').BundleAnalyzerPlugin;
-const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 function webpackConfig(args: Partial<BuildArgs>) {
 	const config: any = baseConfig(args);
@@ -22,13 +22,23 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			reportFilename: '../info/report.html',
 			statsFilename: '../info/stats.json'
 		}),
-		new CopyWebpackPlugin([ { context: 'src', from: '**/*', ignore: '*.ts' } ]),
 		new HtmlWebpackPlugin({ inject: true, chunks: [ 'src/main' ], template: 'src/index.html' }),
 		new webpack.optimize.UglifyJsPlugin({ sourceMap: true, compress: { warnings: false }, exclude: /tests[/]/ })
-	];
+	].map((plugin: any) => {
+		if (plugin instanceof ExtractTextPlugin) {
+			return new ExtractTextPlugin({
+				filename: '[contenthash].bundle.css',
+				allChunks: true,
+				disable: false
+			});
+		}
+		return plugin;
+	});
 
 	config.plugins = plugins;
 	config.output.path = path.join(config.output.path, 'dist');
+	config.output.chunkFilename = '[chunkhash].bundle.js';
+	config.output.filename = '[chunkhash].bundle.js';
 	return config;
 }
 
