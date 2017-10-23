@@ -11,7 +11,7 @@ const styles = {
 	lineHeight: '1.2',
 	whiteSpace: 'pre',
 	fontFamily: 'Menlo, Consolas, monospace',
-	fontSize: '13px',
+	fontSize: '12px',
 	position: 'fixed',
 	zIndex: 9999,
 	padding: '10px',
