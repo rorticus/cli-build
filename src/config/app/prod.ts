@@ -28,8 +28,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 		if (plugin instanceof ExtractTextPlugin) {
 			return new ExtractTextPlugin({
 				filename: '[contenthash].bundle.css',
-				allChunks: true,
-				disable: false
+				allChunks: true
 			});
 		}
 		return plugin;
