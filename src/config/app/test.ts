@@ -14,7 +14,17 @@ function webpackConfig(args: Partial<BuildArgs>) {
 			.sync([`${args.basePath}/tests/functional/**/*.ts`])
 			.map((filename: string) => filename.replace(/\.ts$/, ''));
 
-		return { unit, functional };
+		const tests: any = {};
+
+		if (unit.length) {
+			tests.unit = unit;
+		}
+
+		if (functional.length) {
+			tests.functional = functional;
+		}
+
+		return tests;
 	};
 	config.externals = config.externals || [];
 	config.externals.push(/^intern/);
