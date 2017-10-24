@@ -109,7 +109,7 @@ ${chalk.gray(stats.warnings.map((warning: string) => stripAnsi(warning)))}
 ` : '';
 
 	logUpdate(`
-${logSymbols.info} cli-build: ${version}
+${logSymbols.info} cli-build-app: ${version}
 ${logSymbols.info} typescript: ${typescript.version}
 ${logSymbols.success} hash: ${stats.hash}
 ${logSymbols.error} errors: ${stats.errors.length}
