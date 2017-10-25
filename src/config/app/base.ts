@@ -99,7 +99,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 		entry: {
 			[ mainEntry ]: removeEmpty([
 				serviceWorker && path.join(__dirname, 'sw.js'),
-				path.join(__dirname, 'btr.js'),
+				buildTimeRender && path.join(__dirname, 'btr.js'),
 				path.join(srcPath, 'main.css'),
 				path.join(srcPath, 'main.ts')
 			])
