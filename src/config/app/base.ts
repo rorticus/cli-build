@@ -58,7 +58,7 @@ function getUMDCompatLoader(options: { bundles?: { [key: string ]: string[] } })
 
 const removeEmpty = (items: any[]) => items.filter((item) => item);
 
-const cssLoaders = 	[
+const cssLoaders = [
 	'@dojo/webpack-contrib/css-module-decorator-loader',
 	`css-loader?modules&sourceMap&importLoaders=1&localIdentName=[hash:base64:8]`,
 	{
