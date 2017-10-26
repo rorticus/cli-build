@@ -60,7 +60,7 @@ function compile(config: webpack.Configuration, options: any, args: BuildArgs): 
 		spinner.start();
 		return new Promise<void>((resolve, reject) => {
 			compiler.watch((config as any).watchOptions, (err: any, stats) => {
-				logStats(stats.toJson(), config);
+				!args.quiet && logStats(stats.toJson(), config);
 			});
 		});
 	}
@@ -73,7 +73,7 @@ function compile(config: webpack.Configuration, options: any, args: BuildArgs): 
 			}
 			if (stats) {
 				spinner.stop();
-				logStats(stats.toJson(), config);
+				!args.quiet && logStats(stats.toJson(), config);
 			}
 			resolve();
 		});
@@ -135,7 +135,7 @@ function watch(config: webpack.Configuration, options: any, args: BuildArgs) {
 	const spinner = ora('building');
 	compiler.plugin('done', (stats) => {
 		spinner.stop();
-		logStats(stats.toJson(), config, true);
+		args.quiet && logStats(stats.toJson(), config, true);
 	});
 	compiler.plugin('invalid', () => {
 		logUpdate('');
@@ -180,6 +180,11 @@ const command: Command<BuildArgs> = {
 		});
 		options('watch-serve', {
 			describe: 'watch-serve',
+			default: false,
+			type: 'boolean'
+		});
+		options('quiet', {
+			describe: 'quiet',
 			default: false,
 			type: 'boolean'
 		});

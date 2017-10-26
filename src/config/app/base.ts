@@ -4,6 +4,7 @@ import { existsSync } from 'fs';
 import * as path from 'path';
 import { BuildArgs } from '../../main';
 import BuildTimeRender from './BuildTimeRender';
+import CssModulePlugin from '@dojo/webpack-contrib/css-module-plugin/CssModulePlugin';
 
 const IgnorePlugin = require('webpack/lib/IgnorePlugin');
 const AutoRequireWebpackPlugin = require('auto-require-webpack-plugin');
@@ -55,20 +56,6 @@ function getUMDCompatLoader(options: { bundles?: { [key: string ]: string[] } })
 	};
 }
 
-function getCSSReplacerPlugin() {
-	const replacedModules = new Set<string>();
-	return new webpack.NormalModuleReplacementPlugin(/\.m.css$/, (result: any) => {
-		const requestFileName = path.resolve(result.context, result.request);
-		const jsFileName = requestFileName + '.js';
-		if (replacedModules.has(requestFileName)) {
-			replacedModules.delete(requestFileName);
-		} else if (existsSync(jsFileName)) {
-			replacedModules.add(requestFileName);
-			result.request = result.request.replace(/\.m\.css$/, '.m.css.js');
-		}
-	});
-}
-
 const removeEmpty = (items: any[]) => items.filter((item) => item);
 
 const cssLoaders = 	[
@@ -106,11 +93,11 @@ function webpackConfig(args: Partial<BuildArgs>) {
 		},
 		node: { dgram: 'empty', net: 'empty', tls: 'empty', fs: 'empty' },
 		plugins: removeEmpty([
+			new CssModulePlugin(basePath),
 			serviceWorker && new webpack.DefinePlugin({ SW_ROUTES: JSON.stringify(serviceWorker.request || []) }),
 			new AutoRequireWebpackPlugin(mainEntry),
 			new webpack.BannerPlugin(banner),
 			new IgnorePlugin(/request\/providers\/node/),
-			getCSSReplacerPlugin(),
 			new ExtractTextPlugin({ filename: 'src/main.css', allChunks: true, disable: true }),
 			serviceWorker && new OfflinePlugin(serviceWorker),
 			manifest && new WebpackPwaManifest(manifest),
@@ -147,10 +134,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 				{ test: /.*\.(gif|png|jpe?g|svg|eot|ttf|woff|woff2)$/i, loader: 'file-loader?hash=sha512&digest=hex&name=[hash:base64:8].[ext]' },
 				{ test: /\.css$/, exclude: allPaths, use: ExtractTextPlugin.extract({ fallback: [ 'style-loader' ], use: [ 'css-loader?sourceMap' ] }) },
 				{ test: /\.m\.css.js$/, exclude: allPaths, use: [ 'json-css-module-loader' ] },
-				{ include: allPaths, test: /.*\.css?$/, use: ExtractTextPlugin.extract({
-					fallback: [ 'style-loader' ],
-					use: cssLoaders
-				}) }
+				{ include: allPaths, test: /.*\.css?$/, use: ExtractTextPlugin.extract({ fallback: [ 'style-loader' ], use: cssLoaders }) }
 			])
 		}
 	};
