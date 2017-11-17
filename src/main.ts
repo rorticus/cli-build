@@ -1,9 +1,18 @@
 import { Command, Helper, OptionsHelper } from '@dojo/interfaces/cli';
-import webpack = require('webpack');
-import prodConfig from './config/app/prod';
-import devConfig from './config/app/dev';
-import testConfig from './config/app/test';
+import { isArrayLike } from '@dojo/shim/iterator';
 import * as fs from 'fs';
+import devConfig from './config/app/dev';
+import prodConfig from './config/app/prod';
+import testConfig from './config/app/test';
+
+import banner from './features/banner/banner';
+import css from './features/css/css';
+import manifest from './features/manifest/manifest';
+import serviceWorker from './features/serviceworker/serviceworker';
+import { BuildArgs, BuildType, FeatureConfiguration, FeatureGenerator } from './interfaces';
+import webpack = require('webpack');
+
+const features: FeatureGenerator[] = [banner, css, manifest, serviceWorker];
 
 const fixMultipleWatchTrigger = require('webpack-mild-compile');
 const express = require('express');
@@ -17,19 +26,29 @@ const typescript = require('typescript');
 const version = require('./package.json').version;
 const stripAnsi = require('strip-ansi');
 const gzipSize = require('gzip-size');
-
-export interface Bundles {
-	[key: string]: string[];
-}
-
-export interface BuildArgs {
-	[index: string]: any;
-	bundles: Bundles;
-	force: boolean;
-}
+const merge = require('webpack-merge');
 
 interface ConfigFactory {
 	(args: Partial<BuildArgs>): webpack.Configuration;
+}
+
+function mergeFeatureConfig(config: webpack.Configuration, featureConfig: FeatureConfiguration | FeatureConfiguration[] | null): webpack.Configuration {
+	if (!featureConfig) {
+		return config;
+	}
+
+	if (isArrayLike(featureConfig)) {
+		let mergedConfig = config;
+
+		for (let i = 0; i < featureConfig.length; i++) {
+			mergedConfig = mergeFeatureConfig(mergedConfig, featureConfig[i]);
+		}
+
+		return mergedConfig;
+	}
+	else {
+		return merge(config, featureConfig.config);
+	}
 }
 
 function mergeConfigArgs(...sources: BuildArgs[]): BuildArgs {
@@ -151,7 +170,7 @@ function watch(config: webpack.Configuration, options: any, args: BuildArgs) {
 		log: console.log, path: '/__webpack_hmr', heartbeat: 10 * 1000
 	}));
 	return new Promise((resolve) => {
-		app.listen((config as any).devServer.port, '127.0.0.1', function(err: any) {
+		app.listen((config as any).devServer.port, '127.0.0.1', function (err: any) {
 			logUpdate('');
 			spinner.start();
 		});
@@ -190,7 +209,8 @@ const command: Command<BuildArgs> = {
 		});
 	},
 	run(helper: Helper, args: BuildArgs) {
-		console.log = () => {};
+		console.log = () => {
+		};
 		const dojoRc = helper.configuration.get() || Object.create(null);
 		const options = {
 			compress: true,
@@ -199,20 +219,36 @@ const command: Command<BuildArgs> = {
 		const configArgs = mergeConfigArgs(dojoRc as BuildArgs, args);
 		configArgs.basePath = process.cwd();
 		let config;
+		let isProd = true;
 		if (args.test) {
 			config = testConfig;
+			isProd = false;
 		}
 		else if (args.dev) {
 			config = devConfig;
+			isProd = false;
 		}
 		else {
 			config = prodConfig;
 		}
+
+		let finalConfig = config(configArgs);
+		// base configs for each feature
+		features.forEach(feature => {
+			finalConfig = mergeFeatureConfig(finalConfig, feature.getBaseConfig(configArgs));
+		});
+
+		features.forEach(feature => {
+			if (feature.getBuildConfig) {
+				finalConfig = mergeFeatureConfig(finalConfig, feature.getBuildConfig(isProd ? BuildType.Prod : BuildType.Dev, configArgs));
+			}
+		});
+
 		if (args['watch-serve']) {
-			return watch(config(configArgs), options, args);
+			return watch(finalConfig, options, args);
 		}
 		else {
-			return compile(config(configArgs), options, args);
+			return compile(finalConfig, options, args);
 		}
 	}
 };

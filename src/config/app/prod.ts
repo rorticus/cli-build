@@ -1,9 +1,8 @@
-import { BuildArgs } from '../../main';
+import { BuildArgs } from '../../interfaces';
 import baseConfig from './base';
 import webpack = require('webpack');
 import * as path from 'path';
 
-const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer-sunburst').BundleAnalyzerPlugin;
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
@@ -13,7 +12,6 @@ function webpackConfig(args: Partial<BuildArgs>) {
 
 	const plugins = [
 		...config.plugins,
-		new OptimizeCssAssetsPlugin({ cssProcessorOptions: { map: { inline: false } } }),
 		new BundleAnalyzerPlugin({
 			analyzerMode: 'static',
 			openAnalyzer: false,

@@ -1,4 +1,4 @@
-import { BuildArgs } from '../../main';
+import { BuildArgs } from '../../interfaces';
 import baseConfig from './base';
 import * as path from 'path';
 const globby = require('globby');
