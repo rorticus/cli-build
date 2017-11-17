@@ -6,7 +6,6 @@ import BuildTimeRender from './BuildTimeRender';
 
 const IgnorePlugin = require('webpack/lib/IgnorePlugin');
 const AutoRequireWebpackPlugin = require('auto-require-webpack-plugin');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 export const basePath = process.cwd();
 export const srcPath = path.join(basePath, 'src');
@@ -62,7 +61,6 @@ function webpackConfig(args: Partial<BuildArgs>) {
 		plugins: removeEmpty([
 			new AutoRequireWebpackPlugin(mainEntry),
 			new IgnorePlugin(/request\/providers\/node/),
-			new ExtractTextPlugin({ filename: 'src/main.css', allChunks: true, disable: true }),
 			buildTimeRender && new BuildTimeRender(buildTimeRender)
 		]),
 		output: {

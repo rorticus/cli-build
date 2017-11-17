@@ -1,7 +1,7 @@
 import CssModulePlugin from '@dojo/webpack-contrib/css-module-plugin/CssModulePlugin';
 import * as path from 'path';
-import { BuildType, FeatureConfiguration, FeatureGenerator } from '../../interfaces';
 import { allPaths, basePath, mainEntry, srcPath } from '../../config/app/base';
+import { BuildType, FeatureConfiguration, FeatureGenerator } from '../../interfaces';
 
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
@@ -71,13 +71,23 @@ const cssFeature: FeatureGenerator = {
 			return {
 				config: {
 					plugins: [
-						new OptimizeCssAssetsPlugin({ cssProcessorOptions: { map: { inline: false } } })
+						new OptimizeCssAssetsPlugin({ cssProcessorOptions: { map: { inline: false } } }),
+						new ExtractTextPlugin({
+							filename: '[contenthash].bundle.css',
+							allChunks: true
+						})
 					]
 				}
 			};
 		}
 
-		return null;
+		return {
+			config: {
+				plugins: [
+					new ExtractTextPlugin({ filename: 'src/main.css', allChunks: true })
+				]
+			}
+		};
 	}
 };
 
