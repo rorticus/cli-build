@@ -227,13 +227,6 @@ function webpackConfig(args: Partial<BuildArgs>) {
 					filename: 'widget-core.js'
 				})];
 			}),
-			...includeWhen(!args.watch && !args.withTests, () => {
-				return [ new webpack.optimize.UglifyJsPlugin({
-					sourceMap: true,
-					compress: { warnings: false },
-					exclude: /tests[/]/
-				}) ];
-			}),
 			includeWhen(args.element, args => {
 				return new HtmlWebpackPlugin({
 					inject: false,
@@ -317,7 +310,7 @@ function webpackConfig(args: Partial<BuildArgs>) {
 				basePath,
 				path.join(basePath, 'node_modules')
 			],
-			extensions: ['.ts', '.tsx', '.js']
+			extensions: ['.ts', '.tsx', '.mjs', '.js']
 		},
 			resolveLoader: {
 				modules: [
